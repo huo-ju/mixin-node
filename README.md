@@ -8,7 +8,9 @@ The RSA PRIVATE KEY is your session KEY, please save the private Key as a file.
 
 3. decrypt the PIN_TOKEN using tools/decryptkey.go
 
+```bash
 go run tools/decryptkey.go -key mixin.key -label ********-eb33-4112-b30a-2ae287dfbe32 -message **********OIGnELd1XnAFXec6WQJC4QtN0jZaWVBTQXk9okH9UfOzxfCdA2lGzZik3VeFC6TPqyiCM61JRSqt/uSbCzPWm7+2Svb56YRCK8jmmH7Fpy33F4grZfYx7r8AxY8Nm9A8xv+tSh2sSaUZGK0W4lFKnA/WEKkIwkzEM=
+```
 
 key is the filename of the private key 
 label is the session ID
@@ -18,9 +20,11 @@ Then you have the decrypted string which is the aeskey.
 
 
 4. Please see the transfer example in examples/test.js. Or here for reference:
-
+```bash
 npm install mixin-node --save
+```
 
+```javascript
 const mixinjs = require('mixin-node');  
 let opts = { 
     client_id         : "**********095-4960-8dd1-edf6e583a2a9",
@@ -42,6 +46,7 @@ mixin.transferFromBot(asset_id, recipient_id, amount, memo)
   console.log(err);
 });
 
+```
 -----------
 
 1. 按照mixin开发者手册指引，建立app. https://developers.mixin.one/guides
@@ -55,7 +60,9 @@ mixin.transferFromBot(asset_id, recipient_id, amount, memo)
 
 3. 解密获得aeskey，在本repo的tools下提供了一个decryptkey.go这个工具用于解密
 
+```bash
 go run tools/decryptkey.go -key mixin.key -label a335e1e3-eb33-4112-b30a-2ae287dfbe32 -message WPdPdXnIM1OIGnELd1XnAFXec6WQJC4QtN0jZaWVBTQXk9okH9UfOzxfCdA2lGzZik3VeFC6TPqyiCM61JRSqt/uSbCzPWm7+2Svb56YRCK8jmmH7Fpy33F4grZfYx7r8AxY8Nm9A8xv+tSh2sSaUZGK0W4lFKnA/WEKkIwkzEM=
+```
 
 key 是前面保存的PRIVATE KEY的文件名，比如mixin.key
 label 是第2步中的session ID
@@ -65,8 +72,11 @@ message 是第2步中的第三行，PIN_TOKEN
 
 4. 通过机器人转账的例子代码
 
+```bash
 npm install mixin-node --save
+```
 
+```javascript
 const mixinjs = require('mixin-node');  
 let opts = { 
     client_id         : "**********095-4960-8dd1-edf6e583a2a9",
@@ -87,3 +97,4 @@ mixin.transferFromBot(asset_id, recipient_id, amount, memo)
 }).catch( (err) => {
   console.log(err);
 });
+```
