@@ -1,0 +1,26 @@
+{
+  "name": "mixin-node",
+  "description": "The nodejs SDK for mixin.one",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/virushuo/mixin-node"
+  },
+  "keywords": [
+    "mixin",
+    "blockchain",
+    "cryptocurrency"
+  ],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/virushuo/mixin-node/issues"
+  },
+  "homepage": "https://github.com/virushuo/mixin-node",
+  "dependencies": {
+    "int64-buffer": "^0.1.10",
+    "jsonwebtoken": "^8.2.1",
+    "request": "^2.85.0"
+  }
+}
