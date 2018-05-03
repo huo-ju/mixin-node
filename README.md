@@ -1,3 +1,7 @@
+# mixin-node
+The nodejs SDK for mixin.one
+
+
 1. Following mixin developers documentation https://developers.mixin.one/guides create your mixin app.
 2. Click the button "Click to generate a new session". Now you will now have the bot session secrets.
 
