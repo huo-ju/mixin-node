@@ -3,7 +3,7 @@ The nodejs SDK for mixin.one
 
 
 1. Following mixin developers documentation https://developers.mixin.one/guides create your mixin app.
-2. Click the button "Click to generate a new session". Now you will now have the bot session secrets.
+2. Click the button "Click to generate a new session". Now you will have the bot session secrets.
 
 The 6 digit number is your asset PIN
 The UUID is the new session ID 
