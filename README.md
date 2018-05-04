@@ -3,7 +3,7 @@ The nodejs SDK for mixin.one
 
 
 1. Following mixin developers documentation https://developers.mixin.one/guides create your mixin app.
-2. Click the button "Click to generate a new session". Now you will now have the bot session secrets.
+2. Click the button "Click to generate a new session". Now you will have the bot session secrets.
 
 The 6 digit number is your asset PIN
 The UUID is the new session ID 
@@ -35,13 +35,15 @@ let opts = {
     aeskey            : "*****DEN7P3k172oBLW3g/TUZa6Xa5MrgOOzKfXdv5A=",
     pin               : "854423",
     session_id    : "a335e1e3-eb33-4112-b30a-2ae287dfbe32",
-    privatekey    : "mixin_dev.key"
+    privatekey    : "mixin_dev.key" //filepath(String) or PrivateKey(Buffer)
 }
 
-var asset_id = "965e5c6e-434c-3fa9-b780-c50f43cd955c"; //CNB
-var recipient_id = "*************-4152-9c5a-839d286f7e4f"; //User Account ID
-var amount = "100";
-var memo ="test transfer"
+let mixin = new mixinjs(opts);
+
+let asset_id = "965e5c6e-434c-3fa9-b780-c50f43cd955c"; //CNB
+let recipient_id = "*************-4152-9c5a-839d286f7e4f"; //User Account ID
+let amount = "100";
+let memo ="test transfer"
 
 mixin.transferFromBot(asset_id, recipient_id, amount, memo)
 .then( (result) =>{
@@ -87,13 +89,15 @@ let opts = {
     aeskey            : "*****DEN7P3k172oBLW3g/TUZa6Xa5MrgOOzKfXdv5A=",
     pin               : "854423",
     session_id    : "a335e1e3-eb33-4112-b30a-2ae287dfbe32",
-    privatekey    : "mixin_dev.key"
+    privatekey    : "mixin_dev.key" //可以用带有路径的文件名string，或者直接传入Buffer
 }
 
-var asset_id = "965e5c6e-434c-3fa9-b780-c50f43cd955c"; //CNB
-var recipient_id = "*************-4152-9c5a-839d286f7e4f"; //User Account ID
-var amount = "100";
-var memo ="test transfer"
+let mixin = new mixinjs(opts);
+
+let asset_id = "965e5c6e-434c-3fa9-b780-c50f43cd955c"; //CNB
+let recipient_id = "*************-4152-9c5a-839d286f7e4f"; //User Account ID
+let amount = "100";
+let memo ="test transfer"
 
 mixin.transferFromBot(asset_id, recipient_id, amount, memo)
 .then( (result) =>{
