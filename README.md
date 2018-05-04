@@ -38,10 +38,12 @@ let opts = {
     privatekey    : "mixin_dev.key"
 }
 
-var asset_id = "965e5c6e-434c-3fa9-b780-c50f43cd955c"; //CNB
-var recipient_id = "*************-4152-9c5a-839d286f7e4f"; //User Account ID
-var amount = "100";
-var memo ="test transfer"
+let mixin = new mixinjs(opts);
+
+let asset_id = "965e5c6e-434c-3fa9-b780-c50f43cd955c"; //CNB
+let recipient_id = "*************-4152-9c5a-839d286f7e4f"; //User Account ID
+let amount = "100";
+let memo ="test transfer"
 
 mixin.transferFromBot(asset_id, recipient_id, amount, memo)
 .then( (result) =>{
@@ -90,10 +92,12 @@ let opts = {
     privatekey    : "mixin_dev.key"
 }
 
-var asset_id = "965e5c6e-434c-3fa9-b780-c50f43cd955c"; //CNB
-var recipient_id = "*************-4152-9c5a-839d286f7e4f"; //User Account ID
-var amount = "100";
-var memo ="test transfer"
+let mixin = new mixinjs(opts);
+
+let asset_id = "965e5c6e-434c-3fa9-b780-c50f43cd955c"; //CNB
+let recipient_id = "*************-4152-9c5a-839d286f7e4f"; //User Account ID
+let amount = "100";
+let memo ="test transfer"
 
 mixin.transferFromBot(asset_id, recipient_id, amount, memo)
 .then( (result) =>{
