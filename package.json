@@ -1,7 +1,7 @@
 {
   "name": "mixin-node",
   "description": "The nodejs SDK for mixin.one",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "index.js",
   "repository": {
     "type": "git",
