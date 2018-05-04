@@ -54,6 +54,8 @@ let MIXINNODE = function(opts) {
       const seconds_exp = Math.floor(Date.now() / 1000) + 900;
       if(!memo)
         memo="";
+      if(typeof amount =='number')
+        amount = amount+'';
       let encrypted_pin = self.encryptPIN();
       let transfer_json =
       {
