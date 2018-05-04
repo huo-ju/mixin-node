@@ -35,7 +35,7 @@ let opts = {
     aeskey            : "*****DEN7P3k172oBLW3g/TUZa6Xa5MrgOOzKfXdv5A=",
     pin               : "854423",
     session_id    : "a335e1e3-eb33-4112-b30a-2ae287dfbe32",
-    privatekey    : "mixin_dev.key"
+    privatekey    : "mixin_dev.key" //filepath(String) or PrivateKey(Buffer)
 }
 
 let mixin = new mixinjs(opts);
@@ -89,7 +89,7 @@ let opts = {
     aeskey            : "*****DEN7P3k172oBLW3g/TUZa6Xa5MrgOOzKfXdv5A=",
     pin               : "854423",
     session_id    : "a335e1e3-eb33-4112-b30a-2ae287dfbe32",
-    privatekey    : "mixin_dev.key"
+    privatekey    : "mixin_dev.key" //可以用带有路径的文件名string，或者直接传入Buffer
 }
 
 let mixin = new mixinjs(opts);
