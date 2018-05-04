@@ -61,9 +61,11 @@ let MIXINNODE = function(opts) {
         counter_user_id: recipient_id,
         amount:          amount,
         pin:             encrypted_pin,
-        trace_id:        self.uuidv4(),
-        memo    :        memo
+        trace_id:        self.uuidv4()
       };
+
+      if(memo!="")
+        transfer_json["memo"] = memo;
       let transfer_json_str = JSON.stringify(transfer_json);
       let transfer_sig_str = "POST/transfers"+transfer_json_str;
       let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest("hex");
