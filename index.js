@@ -195,6 +195,24 @@ console.log(transfer_sig_str);
     });
   };
 
+  self.send_CREATE_MESSAGE = (ws, opts, msgobj) => {
+    return new Promise((resolve, reject) => {
+      try {
+        let message_id = self.uuidv4();
+        let params =  {"conversation_id": msgobj.data.conversation_id, "recipient_id":msgobj.data.user_id ,"message_id": message_id, "category": opts.category,"data":opts.data}
+        let message = {id:self.uuidv4(), "action":"CREATE_MESSAGE", params:params }
+console.log(message);
+        self.ws_send(ws, message).then(function(){
+          resolve(message_id);
+        }).catch(function(err){
+          reject(err);
+        });
+      } catch (err) {
+        reject(err);
+      }
+    });
+  };
+
 }
 
 
@@ -220,13 +238,25 @@ MIXINNODE.prototype.decode = function(data){
     }
   });
 }
+//{"conversation_id": in_conversation_id,"recipient_id":to_user_id ,"message_id":str(uuid.uuid4()),"category":"PLAIN_TEXT","data":base64.b64encode(textContent)}
 
+MIXINNODE.prototype.sendText = function(ws, text, msgobj){
+  let opts = {};
+  opts.category = "PLAIN_TEXT";
+  opts.data = new Buffer(text).toString('base64');
+  console.log("===sendText");
+  console.log(opts);
+  return this.send_CREATE_MESSAGE(ws, opts, msgobj);
+}
 MIXINNODE.prototype.sendMsg = function(ws, action, opts){
   switch (action){
     case "ACKNOWLEDGE_MESSAGE_RECEIPT":
       return this.send_ACKNOWLEDGE_MESSAGE_RECEIPT(ws, opts.message_id);
     case "LIST_PENDING_MESSAGES":
       return this.send_LIST_PENDING_MESSAGES(ws);
+    //case "CREATE_MESSAGE":
+    //  return this.send_CREATE_MESSAGE(ws, opts);
+
     default:
       return "";
   }
