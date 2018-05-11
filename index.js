@@ -238,6 +238,7 @@ MIXINNODE.prototype.decode = function(data){
     }
   });
 }
+
 //{"conversation_id": in_conversation_id,"recipient_id":to_user_id ,"message_id":str(uuid.uuid4()),"category":"PLAIN_TEXT","data":base64.b64encode(textContent)}
 
 MIXINNODE.prototype.sendText = function(ws, text, msgobj){
@@ -248,6 +249,17 @@ MIXINNODE.prototype.sendText = function(ws, text, msgobj){
   console.log(opts);
   return this.send_CREATE_MESSAGE(ws, opts, msgobj);
 }
+
+MIXINNODE.prototype.sendButton= function(ws, text, msgobj){
+  let opts = {};
+  opts.category = "APP_BUTTON_GROUP";
+  opts.data = new Buffer(text).toString('base64');
+  console.log("===button");
+  console.log(opts);
+  return this.send_CREATE_MESSAGE(ws, opts, msgobj);
+}
+
+
 MIXINNODE.prototype.sendMsg = function(ws, action, opts){
   switch (action){
     case "ACKNOWLEDGE_MESSAGE_RECEIPT":
