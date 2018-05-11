@@ -3,6 +3,7 @@ const Uint64LE= require("int64-buffer").Uint64LE;
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const fs = require('fs');
+const zlib = require("zlib"); 
 
 let MIXINNODE = function(opts) {
   let self = this;
@@ -80,7 +81,7 @@ let MIXINNODE = function(opts) {
         jti: self.uuidv4(),
         sig: transfer_sig_sha256
       };
-      var token = jwt.sign(payload, self.privatekey,{ algorithm: 'RS512'});
+      let token = jwt.sign(payload, self.privatekey,{ algorithm: 'RS512'});
 
       let options ={
         url:'https://api.mixin.one/transfers',
@@ -105,6 +106,32 @@ let MIXINNODE = function(opts) {
 
     });
   }
+  
+  self.jwtToken = (method, uri, body) =>{
+      let transfer_sig_str = method+uri+body;
+console.log(transfer_sig_str);
+      let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest("hex");
+
+      const seconds = Math.floor(Date.now() / 1000);
+      let time = new Uint64LE(seconds);
+      const seconds_exp = Math.floor(Date.now() / 1000) + 30;
+
+      let payload = {
+        uid: self.client_id, //bot account id
+        sid: self.session_id, 
+        iat: seconds ,
+        exp: seconds_exp ,
+        jti: self.uuidv4(),
+        sig: transfer_sig_sha256
+      };
+      let token = jwt.sign(payload, self.privatekey,{ algorithm: 'RS512'});
+      return token;
+  }
+  
+  self.tokenGET = (uri, body) => {
+    return this.jwtToken("GET", uri, body);
+  }
+
   self.uuidv4 = () => {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
       var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -112,12 +139,98 @@ let MIXINNODE = function(opts) {
     });
   }
 
-}
+  self.ws_send = (ws, message) => {
+    return new Promise((resolve, reject) => {
+      try {
+        let buf = new Buffer(JSON.stringify(message), 'utf-8');  
+        zlib.gzip(buf, function (_, zippedmsg) { 
+          ws.send(zippedmsg);
+          resolve();
+        });
+      } catch (err){
+        reject(err);
+      }
+    });
+  }
 
+  self.send_ACKNOWLEDGE_MESSAGE_RECEIPT = (ws, message_id) => {
+    return new Promise((resolve, reject) => {
+      try {
+        let id = self.uuidv4();
+        let message =  {
+          "id": id,
+          "action": "ACKNOWLEDGE_MESSAGE_RECEIPT",
+          "params": {
+            "message_id":message_id,
+            "status": "READ"
+          }
+        }
+        self.ws_send(ws, message).then(function(){
+          resolve(id);
+        }).catch(function(err){
+          reject(err);
+        });
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  self.send_LIST_PENDING_MESSAGES = (ws) => {
+    return new Promise((resolve, reject) => {
+      try {
+        let id = self.uuidv4();
+        let message =  {
+          "id": id,
+          "action": "LIST_PENDING_MESSAGES"
+        }
+        self.ws_send(ws, message).then(function(){
+          resolve(id);
+        }).catch(function(err){
+          reject(err);
+        });
+      } catch (err) {
+        reject(err);
+      }
+    });
+  };
+
+}
 
 
 MIXINNODE.prototype.transferFromBot = function(){
   return this.transferFromBot(asset_id, recipient_id, amount, memo);
+}
+MIXINNODE.prototype.authTokenGET = function(uri, body){
+  return this.tokenGET(uri, body);
+}
+MIXINNODE.prototype.newuuid= function(){
+  return this.uuidv4();
+}
+
+MIXINNODE.prototype.decode = function(data){
+  return new Promise((resolve, reject) => {
+    try{
+      zlib.gunzip(data, function(err, dezipped) { 
+        let msgobj = JSON.parse(dezipped.toString());
+        resolve(msgobj);
+      }) 
+    }catch(err){
+      reject(err);
+    }
+  });
+}
+
+MIXINNODE.prototype.sendMsg = function(ws, action, opts){
+  switch (action){
+    case "ACKNOWLEDGE_MESSAGE_RECEIPT":
+      return this.send_ACKNOWLEDGE_MESSAGE_RECEIPT(ws, opts.message_id);
+    case "LIST_PENDING_MESSAGES":
+      return this.send_LIST_PENDING_MESSAGES(ws);
+    default:
+      return "";
+  }
+
 }
 
 module.exports = MIXINNODE;
