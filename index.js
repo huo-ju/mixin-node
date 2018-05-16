@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const fs = require('fs');
 const zlib = require("zlib"); 
+const wsreconnect = require('./ws-reconnect');
+const WebSocket = require('ws');
 
 let MIXINNODE = function(opts) {
   let self = this;
@@ -139,13 +141,17 @@ let MIXINNODE = function(opts) {
     });
   }
 
-  self.ws_send = (ws, message) => {
+  self.ws_send = (message) => {
     return new Promise((resolve, reject) => {
       try {
         let buf = new Buffer(JSON.stringify(message), 'utf-8');  
         zlib.gzip(buf, function (_, zippedmsg) { 
-          ws.send(zippedmsg);
-          resolve();
+          if(self.ws.socket.readyState == WebSocket.OPEN){
+            self.ws.send(zippedmsg);
+            resolve();
+          }else{
+            reject("websocket_not_ready");
+          }
         });
       } catch (err){
         reject(err);
@@ -153,7 +159,7 @@ let MIXINNODE = function(opts) {
     });
   }
 
-  self.send_ACKNOWLEDGE_MESSAGE_RECEIPT = (ws, message_id) => {
+  self.send_ACKNOWLEDGE_MESSAGE_RECEIPT = (message_id) => {
     return new Promise((resolve, reject) => {
       try {
         let id = self.uuidv4();
@@ -165,7 +171,7 @@ let MIXINNODE = function(opts) {
             "status": "READ"
           }
         }
-        self.ws_send(ws, message).then(function(){
+        self.ws_send( message).then(function(){
           resolve(id);
         }).catch(function(err){
           reject(err);
@@ -176,7 +182,7 @@ let MIXINNODE = function(opts) {
     });
   }
 
-  self.send_LIST_PENDING_MESSAGES = (ws) => {
+  self.send_LIST_PENDING_MESSAGES = () => {
     return new Promise((resolve, reject) => {
       try {
         let id = self.uuidv4();
@@ -184,7 +190,7 @@ let MIXINNODE = function(opts) {
           "id": id,
           "action": "LIST_PENDING_MESSAGES"
         }
-        self.ws_send(ws, message).then(function(){
+        self.ws_send( message).then(function(){
           resolve(id);
         }).catch(function(err){
           reject(err);
@@ -195,13 +201,13 @@ let MIXINNODE = function(opts) {
     });
   };
 
-  self.send_CREATE_MESSAGE = (ws, opts, msgobj) => {
+  self.send_CREATE_MESSAGE = ( opts, msgobj) => {
     return new Promise((resolve, reject) => {
       try {
         let message_id = self.uuidv4();
         let params =  {"conversation_id": msgobj.data.conversation_id, "recipient_id":msgobj.data.user_id ,"message_id": message_id, "category": opts.category,"data":opts.data}
         let message = {id:self.uuidv4(), "action":"CREATE_MESSAGE", params:params }
-        self.ws_send(ws, message).then(function(){
+        self.ws_send( message).then(function(){
           resolve(message_id);
         }).catch(function(err){
           reject(err);
@@ -212,6 +218,42 @@ let MIXINNODE = function(opts) {
     });
   };
 
+  self.wsopts = () =>{
+    let token = self.tokenGET("/","");
+    let options = {
+        headers: {
+            "Authorization" : "Bearer " + token,
+            "perMessageDeflate": false
+        }
+    }
+    return options;
+  }
+
+  self.startws = () =>{
+    self.ws = new wsreconnect('wss://blaze.mixin.one/', 'Mixin-Blaze-1',self, {});
+    self.ws.on("reconnect",function(){
+      if(self.onReconnect){
+        self.onReconnect();
+      }
+    });
+    self.ws.on("connect",function(){
+      if(self.onConnect){
+        self.onConnect();
+      }
+    });
+    self.ws.on("destroyed",function(){
+      if(self.onDestroyed){
+        self.onDestroyed();
+      }
+    });
+    self.ws.on("message",function(data){
+      if(self.onMessage){
+        self.onMessage(data);
+      }
+    });
+    self.ws.start();
+    return self.ws; 
+  }
 }
 
 
@@ -237,30 +279,37 @@ MIXINNODE.prototype.decode = function(data){
     }
   });
 }
-
 //{"conversation_id": in_conversation_id,"recipient_id":to_user_id ,"message_id":str(uuid.uuid4()),"category":"PLAIN_TEXT","data":base64.b64encode(textContent)}
 
-MIXINNODE.prototype.sendText = function(ws, text, msgobj){
+MIXINNODE.prototype.start= function(){
+  return this.startws();
+}
+
+MIXINNODE.prototype.getwsopts = function(){
+  return this.wsopts();
+}
+
+MIXINNODE.prototype.sendText = function( text, msgobj){
   let opts = {};
   opts.category = "PLAIN_TEXT";
   opts.data = new Buffer(text).toString('base64');
-  return this.send_CREATE_MESSAGE(ws, opts, msgobj);
+  return this.send_CREATE_MESSAGE(opts, msgobj);
 }
 
-MIXINNODE.prototype.sendButton= function(ws, text, msgobj){
+MIXINNODE.prototype.sendButton= function(text, msgobj){
   let opts = {};
   opts.category = "APP_BUTTON_GROUP";
   opts.data = new Buffer(text).toString('base64');
-  return this.send_CREATE_MESSAGE(ws, opts, msgobj);
+  return this.send_CREATE_MESSAGE(opts, msgobj);
 }
 
 
-MIXINNODE.prototype.sendMsg = function(ws, action, opts){
+MIXINNODE.prototype.sendMsg = function(action, opts){
   switch (action){
     case "ACKNOWLEDGE_MESSAGE_RECEIPT":
-      return this.send_ACKNOWLEDGE_MESSAGE_RECEIPT(ws, opts.message_id);
+      return this.send_ACKNOWLEDGE_MESSAGE_RECEIPT(opts.message_id);
     case "LIST_PENDING_MESSAGES":
-      return this.send_LIST_PENDING_MESSAGES(ws);
+      return this.send_LIST_PENDING_MESSAGES();
     //case "CREATE_MESSAGE":
     //  return this.send_CREATE_MESSAGE(ws, opts);
 
