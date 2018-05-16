@@ -114,7 +114,7 @@ let MIXINNODE = function(opts) {
 
       const seconds = Math.floor(Date.now() / 1000);
       let time = new Uint64LE(seconds);
-      const seconds_exp = Math.floor(Date.now() / 1000) + 30;
+      const seconds_exp = Math.floor(Date.now() / 1000) + self.timeout;
 
       let payload = {
         uid: self.client_id, //bot account id
