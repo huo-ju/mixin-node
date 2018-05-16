@@ -13,6 +13,7 @@ let MIXINNODE = function(opts) {
   self.aeskey = opts.aeskey;
   self.client_id = opts.client_id;
   self.session_id = opts.session_id;
+  self.timeout = opts.timeout || 3600;
 
   if(typeof opts.privatekey == "string"){
     const cert = fs.readFileSync(opts.privatekey);
@@ -52,7 +53,7 @@ let MIXINNODE = function(opts) {
   self.transferFromBot = (asset_id, recipient_id, amount, memo) => {
     return new Promise((resolve, reject) => {
       const seconds = Math.floor(Date.now() / 1000);
-      const seconds_exp = Math.floor(Date.now() / 1000) + 900;
+      const seconds_exp = Math.floor(Date.now() / 1000) + self.timeout;
       if(!memo)
         memo="";
       if(typeof amount =='number')
