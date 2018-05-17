@@ -109,7 +109,49 @@ let MIXINNODE = function(opts) {
 
     });
   }
-  
+
+  self.readAssets = () =>{
+    return new Promise((resolve, reject) => {
+      const seconds = Math.floor(Date.now() / 1000);
+      const seconds_exp = Math.floor(Date.now() / 1000) + self.timeout;
+      let encrypted_pin = self.encryptPIN();
+      let transfer_sig_str = "GET/assets";
+      let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest("hex");
+
+      let payload = {
+        uid: self.client_id, //bot account id
+        sid: self.session_id, 
+        iat: seconds ,
+        exp: seconds_exp ,
+        jti: self.uuidv4(),
+        sig: transfer_sig_sha256
+      };
+      let token = jwt.sign(payload, self.privatekey,{ algorithm: 'RS512'});
+
+      let options ={
+        url:'https://api.mixin.one/assets',
+        method:"GET",
+        headers: {
+          'Authorization': 'Bearer '+token,
+          'Content-Type' : 'application/json'
+        }
+      }
+      request(options, function(err,httpResponse,body){
+        if(err){
+          reject(err);
+          // err   
+        }else if(body.error){
+          reject(JSON.parse(body.error));
+          //err
+        }else{
+          resolve(JSON.parse(body));
+        }
+      })
+
+    });
+
+  }
+
   self.jwtToken = (method, uri, body) =>{
       let transfer_sig_str = method+uri+body;
       let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest("hex");
@@ -256,6 +298,9 @@ let MIXINNODE = function(opts) {
   }
 }
 
+MIXINNODE.prototype.Assets= function(){
+  return this.readAssets();
+}
 
 MIXINNODE.prototype.transferFromBot = function(){
   return this.transferFromBot(asset_id, recipient_id, amount, memo);
@@ -309,7 +354,6 @@ MIXINNODE.prototype.sendButton= function(text, msgobj){
   return this.send_CREATE_MESSAGE(opts, msgobj);
 }
 
-
 MIXINNODE.prototype.sendMsg = function(action, opts){
   switch (action){
     case "ACKNOWLEDGE_MESSAGE_RECEIPT":
@@ -320,7 +364,6 @@ MIXINNODE.prototype.sendMsg = function(action, opts){
     default:
       return "";
   }
-
 }
 
 module.exports = MIXINNODE;
