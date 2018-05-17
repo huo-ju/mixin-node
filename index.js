@@ -77,7 +77,7 @@ let MIXINNODE = function(opts) {
       let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest("hex");
 
       let payload = {
-        uid: self.client_id, //"56304004-8095-4960-8dd1-edf6e583a2a9", //bot account id
+        uid: self.client_id, //bot account id
         sid: self.session_id, 
         iat: seconds ,
         exp: seconds_exp ,
@@ -279,7 +279,6 @@ MIXINNODE.prototype.decode = function(data){
     }
   });
 }
-//{"conversation_id": in_conversation_id,"recipient_id":to_user_id ,"message_id":str(uuid.uuid4()),"category":"PLAIN_TEXT","data":base64.b64encode(textContent)}
 
 MIXINNODE.prototype.start= function(){
   return this.startws();
@@ -293,6 +292,13 @@ MIXINNODE.prototype.sendText = function( text, msgobj){
   let opts = {};
   opts.category = "PLAIN_TEXT";
   opts.data = new Buffer(text).toString('base64');
+  return this.send_CREATE_MESSAGE(opts, msgobj);
+}
+
+MIXINNODE.prototype.sendImage= function( base64data, msgobj){
+  let opts = {};
+  opts.category = "PLAIN_IMAGE";
+  opts.data = base64data;
   return this.send_CREATE_MESSAGE(opts, msgobj);
 }
 
@@ -310,8 +316,6 @@ MIXINNODE.prototype.sendMsg = function(action, opts){
       return this.send_ACKNOWLEDGE_MESSAGE_RECEIPT(opts.message_id);
     case "LIST_PENDING_MESSAGES":
       return this.send_LIST_PENDING_MESSAGES();
-    //case "CREATE_MESSAGE":
-    //  return this.send_CREATE_MESSAGE(ws, opts);
 
     default:
       return "";
