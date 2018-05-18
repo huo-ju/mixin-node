@@ -110,12 +110,18 @@ let MIXINNODE = function(opts) {
     });
   }
 
-  self.readAssets = () =>{
+  self.readAssets = (asset_id) =>{
     return new Promise((resolve, reject) => {
       const seconds = Math.floor(Date.now() / 1000);
       const seconds_exp = Math.floor(Date.now() / 1000) + self.timeout;
       let encrypted_pin = self.encryptPIN();
       let transfer_sig_str = "GET/assets";
+
+      let url = 'https://api.mixin.one/assets';
+      if ( asset_id && asset_id.length==36 ) {
+        transfer_sig_str = "GET/assets/"+asset_id;
+        url = 'https://api.mixin.one/assets/'+asset_id;
+      }
       let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest("hex");
 
       let payload = {
@@ -129,7 +135,7 @@ let MIXINNODE = function(opts) {
       let token = jwt.sign(payload, self.privatekey,{ algorithm: 'RS512'});
 
       let options ={
-        url:'https://api.mixin.one/assets',
+        url: url,
         method:"GET",
         headers: {
           'Authorization': 'Bearer '+token,
@@ -298,8 +304,8 @@ let MIXINNODE = function(opts) {
   }
 }
 
-MIXINNODE.prototype.Assets= function(){
-  return this.readAssets();
+MIXINNODE.prototype.Assets= function(asset_id){
+  return this.readAssets(asset_id);
 }
 
 MIXINNODE.prototype.transferFromBot = function(){
