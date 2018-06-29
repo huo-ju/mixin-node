@@ -16,6 +16,8 @@ let MIXINNODE = function(opts) {
   self.client_id = opts.client_id;
   self.session_id = opts.session_id;
   self.timeout = opts.timeout || 3600;
+  if(opts.client_secret)
+    self.client_secret = opts.client_secret;
 
   if(typeof opts.privatekey == "string"){
     const cert = fs.readFileSync(opts.privatekey);
@@ -155,8 +157,37 @@ let MIXINNODE = function(opts) {
       })
 
     });
-
   }
+
+  self.requestAccessToken = (code) =>{
+    return new Promise((resolve, reject) => {
+      let auth_json = {
+        client_id: self.client_id,
+        code:  code,
+        client_secret: self.client_secret
+      };
+      let auth_json_str = JSON.stringify(auth_json);
+      let options ={
+        url:'https://api.mixin.one/oauth/token',
+        method:"POST",
+        body: auth_json_str,
+        headers: {
+          'Content-Type' : 'application/json'
+        }
+      }
+      request(options, function(err,httpResponse,body){
+        if(err){
+          reject(err);
+          // err   
+        }else if(body.error){
+          reject(JSON.parse(body.error));
+          //err
+        }else{
+          resolve(JSON.parse(body));
+        }
+      })
+  });
+}
 
   self.jwtToken = (method, uri, body) =>{
       let transfer_sig_str = method+uri+body;
@@ -305,7 +336,7 @@ let MIXINNODE = function(opts) {
 }
 
 MIXINNODE.prototype.Assets= function(asset_id){
-  return this.readAssets(asset_id);
+  return this.readassets(asset_id);
 }
 
 MIXINNODE.prototype.transferFromBot = function(){
@@ -370,6 +401,10 @@ MIXINNODE.prototype.sendMsg = function(action, opts){
     default:
       return "";
   }
+}
+
+MIXINNODE.prototype.requestAccessToken= function(code){
+  return this.requestAccessToken(code);
 }
 
 module.exports = MIXINNODE;
