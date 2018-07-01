@@ -18,6 +18,8 @@ let MIXINNODE = function(opts) {
   self.timeout = opts.timeout || 3600;
   if(opts.client_secret)
     self.client_secret = opts.client_secret;
+  if(opts.share_secret)
+    self.share_secret = opts.share_secret;
 
   if(typeof opts.privatekey == "string"){
     const cert = fs.readFileSync(opts.privatekey);
@@ -158,6 +160,55 @@ let MIXINNODE = function(opts) {
 
     });
   }
+
+  self.readProfile = (access_token) =>{
+    return new Promise((resolve, reject) => {
+      let url = 'https://api.mixin.one/me';
+      let token ="";
+      if(!access_token){
+        const seconds = Math.floor(Date.now() / 1000);
+        const seconds_exp = Math.floor(Date.now() / 1000) + self.timeout;
+        let encrypted_pin = self.encryptPIN();
+        let transfer_sig_str = "GET/me";
+        let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest("hex");
+
+        let payload = {
+          uid: self.client_id, //bot account id
+          sid: self.session_id, 
+          iat: seconds ,
+          exp: seconds_exp ,
+          jti: self.uuidv4(),
+          sig: transfer_sig_sha256
+        };
+        token = jwt.sign(payload, self.privatekey,{ algorithm: 'RS512'});
+      } else {
+        token= access_token;
+      }
+
+      let options ={
+        url: url,
+        method:"GET",
+        headers: {
+          'Authorization': 'Bearer '+token,
+          'Content-Type' : 'application/json'
+        }
+      }
+      console.log(options);
+      request(options, function(err,httpResponse,body){
+        if(err){
+          reject(err);
+          // err   
+        }else if(body.error){
+          reject(JSON.parse(body.error));
+          //err
+        }else{
+          resolve(JSON.parse(body));
+        }
+      })
+
+    });
+  }
+
 
   self.requestAccessToken = (code) =>{
     return new Promise((resolve, reject) => {
@@ -336,7 +387,11 @@ let MIXINNODE = function(opts) {
 }
 
 MIXINNODE.prototype.Assets= function(asset_id){
-  return this.readassets(asset_id);
+  return this.readAssets(asset_id);
+}
+
+MIXINNODE.prototype.readProfile = function(access_token){
+  return this.readProfile (access_token);
 }
 
 MIXINNODE.prototype.transferFromBot = function(){
@@ -405,6 +460,11 @@ MIXINNODE.prototype.sendMsg = function(action, opts){
 
 MIXINNODE.prototype.requestAccessToken= function(code){
   return this.requestAccessToken(code);
+}
+
+MIXINNODE.prototype.signJWT= function(payload){
+  let token = jwt.sign(payload, this.share_secret);
+  return token;
 }
 
 module.exports = MIXINNODE;
