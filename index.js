@@ -193,7 +193,6 @@ let MIXINNODE = function(opts) {
           'Content-Type' : 'application/json'
         }
       }
-      console.log(options);
       request(options, function(err,httpResponse,body){
         if(err){
           reject(err);
