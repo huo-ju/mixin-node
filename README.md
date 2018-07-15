@@ -54,6 +54,40 @@ mixin.transferFromBot(asset_id, recipient_id, amount, memo)
 
 ```
 -----------
+## API
+
+### websocket API
+```javascript
+mixin.onMessage = (data) => {
+  mixin.decode(data).then(function(msgobj){
+      return processing(msgobj); 
+  }).then(function(msgobj){
+    mixin.sendMsg("LIST_PENDING_MESSAGES").then(function(receipt_id){
+      console.log("list receipt_id:"+receipt_id);
+    });
+    mixin.sendText("my text",msgobj).then(function(receipt_id){
+      console.log("text message receipt_id:"+receipt_id);
+    });
+
+    let authLink = "https://mixin.one/oauth/authorize?client_id=" + config.mixin.client_id + "&scope=PROFILE:READ";
+    let btn = '[{"label":"auth","action":"' + authLink+ '","color":"#ff0033"}]'
+    mixin.sendButton(btn, msgobj).then(function(result){
+      console.log(result);
+    });
+  });
+});
+
+```
+
+
+
+### RESTful API
+```javascript
+mixin.requestAccessToken(code).then( (result) =>{
+  console.log(result);
+});
+```
+-----------
 
 1. 按照mixin开发者手册指引，建立app. https://developers.mixin.one/guides
 2. 在Dashboard 点击 Click to generate a new session，记录下全部生成的信息。
