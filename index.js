@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const fs = require('fs');
 const zlib = require("zlib"); 
+const forge = require('node-forge');
 const wsreconnect = require('./ws-reconnect');
 const WebSocket = require('ws');
 
@@ -203,7 +204,7 @@ let MIXINNODE = function(opts) {
         }else{
           resolve(JSON.parse(body));
         }
-      })
+      });
 
     });
   }
@@ -236,8 +237,75 @@ let MIXINNODE = function(opts) {
           resolve(JSON.parse(body));
         }
       })
+    });
+  }
+
+  self.createUser = (username) =>{
+    return new Promise((resolve, reject) => {
+
+    const rsa = forge.pki.rsa;
+    rsa.generateKeyPair({bits: 2048, workers: 2}, function(err, keypair) {
+      let key= {
+        publickeypem: forge.pki.publicKeyToPem(keypair.privateKey),
+        privatekeypem: forge.pki.privateKeyToPem(keypair.privateKey)
+      };
+
+      let lines = key.publickeypem.trim().split("\n");
+      lines.splice(lines.length-1, 1);
+      lines.splice(0, 1);
+      let resultline = lines.map(function(x){return x.trim();});
+      let pubkeystring = resultline.join('');
+
+console.log(key.privatekeypem);
+      let private_lines = key.privatekeypem.trim().split("\n");
+      private_lines.splice(private_lines.length-1, 1);
+      private_lines.splice(0, 1);
+      let private_resultline = private_lines.map(function(x){return x.trim();});
+      let privatekeystring = private_resultline.join('');
+
+      let createuser_json = {};
+      createuser_json["session_secret"] = pubkeystring;
+      createuser_json["full_name"] = username;
+      let createuser_json_str = JSON.stringify(createuser_json);
+      let createuser_sig_str = "POST/users"+createuser_json_str;
+      let createuser_sig_sha256 = crypto.createHash('sha256').update(createuser_sig_str).digest("hex");
+
+      const seconds = Math.floor(Date.now() / 1000);
+      const seconds_exp = Math.floor(Date.now() / 1000) + self.timeout;
+
+      let payload = {
+        uid: self.client_id, //bot account id
+        sid: self.session_id, 
+        iat: seconds ,
+        exp: seconds_exp ,
+        jti: self.uuidv4(),
+        sig: createuser_sig_sha256
+      };
+      let token = jwt.sign(payload, self.privatekey,{ algorithm: 'RS512'});
+      let options ={
+        url:'https://api.mixin.one/users',
+        method:"Post",
+        body: createuser_json_str,
+        headers: {
+          'Authorization': 'Bearer '+token,
+          'Content-Type' : 'application/json'
+        }
+      }
+      request(options, function(err,httpresponse,body){
+        if(err){
+          reject(err);
+        }else if(body.error){
+          reject(JSON.parse(body.error));
+        }else{
+          var result = {};
+          result.privatekey = privatekeystring;
+          result.data= JSON.parse(body).data;
+          resolve(result);
+        }
+      });
+    });
   });
-}
+  }
 
   self.jwtToken = (method, uri, body) =>{
       let transfer_sig_str = method+uri+body;
@@ -465,5 +533,11 @@ MIXINNODE.prototype.signJWT= function(payload){
   let token = jwt.sign(payload, this.share_secret);
   return token;
 }
+
+MIXINNODE.prototype.createUser= function(username){
+  return this.createUser(username);
+}
+
+
 
 module.exports = MIXINNODE;
