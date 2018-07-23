@@ -7,6 +7,8 @@ const zlib = require("zlib");
 const forge = require('node-forge');
 const wsreconnect = require('./ws-reconnect');
 const WebSocket = require('ws');
+const Account = require('./account');
+
 
 let MIXINNODE = function(opts) {
   let self = this;
@@ -31,31 +33,12 @@ let MIXINNODE = function(opts) {
   if(!self.pin || !self.aeskey || !self.client_id || !self.session_id || !self.privatekey){
     throw ("pin, aeskey, client_id, session_id, privatekey are require fields");
   }
+  self.account = new Account(opts); 
+
   self.encryptPIN = () =>{
-    const seconds = Math.floor(Date.now() / 1000);
-    let time = new Uint64LE(seconds);
-    let num = Date.now(); //TODO: read the global iterator value, and +1
-    let iterator = new Uint64LE(num);
-    let pin = Buffer.from( self.pin, 'utf8' )
-    let toencrypt_pin_buff = Buffer.concat([pin, time.toBuffer() ,iterator.toBuffer()]);
-    const aes_BlockSize  = 16;
-    let padding = aes_BlockSize - toencrypt_pin_buff.length % aes_BlockSize;
-    let padding_text_array = [];
-    for(let i =0; i<padding;i++){
-      padding_text_array.push(padding);
-    }
-    let padding_buffer = new Buffer(padding_text_array);
-    let toencrypt_pin_buff_padding = Buffer.concat([toencrypt_pin_buff,padding_buffer]);
-    let aeskeybase64 = self.aeskey;
-    let aeskey= new Buffer(aeskeybase64, 'base64');
-    let iv16  = crypto.randomBytes(16);
-    let cipher = crypto.createCipheriv('aes-256-cbc', aeskey, iv16);
-    cipher.setAutoPadding(false);
-    let encrypted_pin_buff = cipher.update(toencrypt_pin_buff_padding,'utf-8');
-    let encrypted_pin_with_irprefix= Buffer.concat([iv16 , encrypted_pin_buff]);
-    let encrypted_pin = Buffer.from(encrypted_pin_with_irprefix).toString('base64')
-    return encrypted_pin;
+    return this.account.encryptCustomPIN(self.pin, self.aeskey);
   }
+
 
   self.transferFromBot = (asset_id, recipient_id, amount, memo) => {
     return new Promise((resolve, reject) => {
@@ -240,73 +223,7 @@ let MIXINNODE = function(opts) {
     });
   }
 
-  self.createUser = (username) =>{
-    return new Promise((resolve, reject) => {
-
-    const rsa = forge.pki.rsa;
-    rsa.generateKeyPair({bits: 2048, workers: 2}, function(err, keypair) {
-      let key= {
-        publickeypem: forge.pki.publicKeyToPem(keypair.privateKey),
-        privatekeypem: forge.pki.privateKeyToPem(keypair.privateKey)
-      };
-
-      let lines = key.publickeypem.trim().split("\n");
-      lines.splice(lines.length-1, 1);
-      lines.splice(0, 1);
-      let resultline = lines.map(function(x){return x.trim();});
-      let pubkeystring = resultline.join('');
-
-console.log(key.privatekeypem);
-      let private_lines = key.privatekeypem.trim().split("\n");
-      private_lines.splice(private_lines.length-1, 1);
-      private_lines.splice(0, 1);
-      let private_resultline = private_lines.map(function(x){return x.trim();});
-      let privatekeystring = private_resultline.join('');
-
-      let createuser_json = {};
-      createuser_json["session_secret"] = pubkeystring;
-      createuser_json["full_name"] = username;
-      let createuser_json_str = JSON.stringify(createuser_json);
-      let createuser_sig_str = "POST/users"+createuser_json_str;
-      let createuser_sig_sha256 = crypto.createHash('sha256').update(createuser_sig_str).digest("hex");
-
-      const seconds = Math.floor(Date.now() / 1000);
-      const seconds_exp = Math.floor(Date.now() / 1000) + self.timeout;
-
-      let payload = {
-        uid: self.client_id, //bot account id
-        sid: self.session_id, 
-        iat: seconds ,
-        exp: seconds_exp ,
-        jti: self.uuidv4(),
-        sig: createuser_sig_sha256
-      };
-      let token = jwt.sign(payload, self.privatekey,{ algorithm: 'RS512'});
-      let options ={
-        url:'https://api.mixin.one/users',
-        method:"Post",
-        body: createuser_json_str,
-        headers: {
-          'Authorization': 'Bearer '+token,
-          'Content-Type' : 'application/json'
-        }
-      }
-      request(options, function(err,httpresponse,body){
-        if(err){
-          reject(err);
-        }else if(body.error){
-          reject(JSON.parse(body.error));
-        }else{
-          var result = {};
-          result.privatekey = privatekeystring;
-          result.data= JSON.parse(body).data;
-          resolve(result);
-        }
-      });
-    });
-  });
-  }
-
+  
   self.jwtToken = (method, uri, body) =>{
       let transfer_sig_str = method+uri+body;
       let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest("hex");
@@ -534,9 +451,6 @@ MIXINNODE.prototype.signJWT= function(payload){
   return token;
 }
 
-MIXINNODE.prototype.createUser= function(username){
-  return this.createUser(username);
-}
 
 
 
