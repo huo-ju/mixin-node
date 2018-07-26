@@ -20,6 +20,7 @@
   "homepage": "https://github.com/virushuo/mixin-node",
   "dependencies": {
     "int64-buffer": "^0.1.10",
+    "interval-promise": "^1.2.0",
     "jsonwebtoken": "^8.2.1",
     "node-forge": "^0.7.5",
     "request": "^2.85.0",

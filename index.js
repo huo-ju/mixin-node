@@ -7,12 +7,13 @@ const zlib = require("zlib");
 const forge = require('node-forge');
 const wsreconnect = require('./ws-reconnect');
 const WebSocket = require('ws');
+const interval = require('interval-promise');
 const Account = require('./account');
 
 
 let MIXINNODE = function(opts) {
   let self = this;
-
+  self.pullNetworkflag = false;
   opts = opts || {};
   self.pin= opts.pin;
   self.aeskey = opts.aeskey;
@@ -191,6 +192,40 @@ let MIXINNODE = function(opts) {
 
     });
   }
+
+  self.readNetworkSnapshots = (offset, asset, limit, order) => {
+    return new Promise((resolve, reject) => {
+      let _order = "DESC";
+      if(order)
+        _order=order;
+        
+      let path = `/network/snapshots?limit=${limit}&offset=${offset}&order=${_order}`;
+      if(asset && asset != "")
+        path = path + `&asset=${asset}`;
+      let url = "https://api.mixin.one"+path;
+      let token = self.tokenGET(path,"");
+      let options ={
+        url: url,
+        method:"GET",
+        headers: {
+          'Authorization': 'Bearer '+token,
+          'Content-Type' : '0'
+        }
+      }
+      request(options, function(err,httpResponse,body){
+        if(err){
+          reject(err);
+          // err   
+        }else if(body.error){
+          reject(JSON.parse(body.error));
+          //err
+        }else{
+          resolve(JSON.parse(body));
+        }
+      });
+    });
+  };
+
 
 
   self.requestAccessToken = (code) =>{
@@ -446,10 +481,56 @@ MIXINNODE.prototype.requestAccessToken= function(code){
   return this.requestAccessToken(code);
 }
 
+MIXINNODE.prototype.readSnapshots= function(offset, asset, limit, order){
+  return this.readNetworkSnapshots(offset, asset, limit, order);
+}
+
+
 MIXINNODE.prototype.signJWT= function(payload){
   let token = jwt.sign(payload, this.share_secret);
   return token;
 }
+
+MIXINNODE.prototype.startPullNetwork = function(timeinterval, opts, eventHandler){
+  this.pullNetworkflag = true;
+  interval(async (iteration, stop) => {
+    if (this.pullNetworkflag == false) {
+        stop()
+    } else{
+
+      let session = {};
+      try{
+        session = JSON.parse(fs.readFileSync('session.json', 'utf8'));
+      }catch(err){
+        if(opts.offset)
+          session = {offset:offset};
+        else {
+          let current = new Date();
+          session = {offset: current.toISOString()};
+        }
+      }
+
+      let results = await this.readNetworkSnapshots(session.offset, opts.asset_id, opts.limit, opts.order)
+      results = results.data;
+      for(let i in results){
+        session.offset = results[i].created_at;
+        if(results[i].user_id){
+          eventHandler(results[i]);
+        }
+       
+        let json = JSON.stringify(session);
+        fs.writeFileSync('session.json', json, 'utf8');
+      }
+
+    }
+  
+  }, timeinterval) ;
+}
+
+MIXINNODE.prototype.stopPullNetwork= function(){
+      this.pullNetworkflag = false;
+}
+
 
 
 
