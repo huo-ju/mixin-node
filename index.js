@@ -507,6 +507,8 @@ MIXINNODE.prototype.startPullNetwork = function(timeinterval, opts, eventHandler
         else {
           let current = new Date();
           session = {offset: current.toISOString()};
+          let json = JSON.stringify(session);
+          fs.writeFileSync('session.json', json, 'utf8');
         }
       }
 

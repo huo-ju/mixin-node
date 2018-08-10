@@ -1,4 +1,6 @@
+
 (function(){
+var interval = require('interval-promise');
 var util = require('util'),
     events = require('events'),
 	WebSocket = require('ws');
@@ -12,6 +14,7 @@ var WSRECONNECT = function(url, protocols, mixin, options) {
 	this.options 				= options || {};
 	this.socket 				= null;
 	this.isConnected 			= false;
+  this.isAlive           = true;
 	this.reconnectTimeoutId 	= 0;
 	this.retryCount 			= this.options.retryCount || 2;
     this._retryCount            = this.retryCount;
@@ -28,6 +31,9 @@ var WSRECONNECT = function(url, protocols, mixin, options) {
         this.socket.onopen 		 	= this.onOpen.bind(this);
         this.socket.onerror		 	= this.onError.bind(this);
         this.socket.onclose 	 	= this.onClose.bind(this);
+        this.socket.on('pong',function(mess) {
+           this.isAlive = true;
+        });
     };
 
     this.destroy = function() {
@@ -67,6 +73,24 @@ var WSRECONNECT = function(url, protocols, mixin, options) {
     this.send = function(message) {
       this.socket.send(message);
     }
+
+  function noop() {};
+  interval(async (iteration, stop) => {
+     if (this.isAlive === false) {
+        this.socket.terminate();
+        this.emit("pingpongreconnect");
+        this.start();
+      }
+      this.isAlive = false;
+
+     this.socket.ping(noop);
+    //if (this.pullNetworkflag == false) {
+    //    stop()
+    //} else{
+
+    //}
+  
+  }, 10*1000);
 
 };
 
