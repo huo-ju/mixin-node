@@ -13,7 +13,6 @@
     this.options = options || {};
     this.socket = null;
     this.isConnected = false;
-    this.isAlive = true;
     this.reconnectTimeoutId = 0;
     this.retryCount = this.options.retryCount || 2;
     this._retryCount = this.retryCount;
@@ -32,9 +31,6 @@
       this.socket.onopen = this.onOpen.bind(this);
       this.socket.onerror = this.onError.bind(this);
       this.socket.onclose = this.onClose.bind(this);
-      this.socket.on("pong", function(mess) {
-        this.isAlive = true;
-      });
     };
 
     this.destroy = function() {
@@ -78,22 +74,35 @@
       this.socket.send(message);
     };
 
-    function noop() {}
+    this.ping = () => {
+      return new Promise((resolve, reject) => {
+        let pong = false;
+        setTimeout(() => {
+          if (!pong) {
+            reject(new Error('timeout'));
+          }
+        }, 5000);
+        this.socket.on('pong', () => {
+          pong = true;
+          resolve();
+        });
+        try {
+          this.socket.ping();
+        } catch (err) {
+          reject(err);
+        }
+      });
+    };
+
     interval(async (iteration, stop) => {
-      if (this.isAlive === false) {
+      try {
+        await this.ping();
+      } catch (err) {
         this.socket.terminate();
         this.emit("pingpongreconnect");
         this.start();
       }
-      this.isAlive = false;
-
-      this.socket.ping(noop);
-      //if (this.pullNetworkflag == false) {
-      //    stop()
-      //} else{
-
-      //}
-    }, 10 * 1000);
+    }, 30 * 1000);
   };
 
   util.inherits(WSRECONNECT, events.EventEmitter);
