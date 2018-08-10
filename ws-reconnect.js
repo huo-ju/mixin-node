@@ -82,7 +82,7 @@
             reject(new Error('timeout'));
           }
         }, 5000);
-        this.socket.on('pong', () => {
+        this.socket.once('pong', () => {
           pong = true;
           resolve();
         });
