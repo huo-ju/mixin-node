@@ -380,23 +380,33 @@ let MIXINNODE = function(opts) {
 
   self.startws = () =>{
     self.ws = new wsreconnect('wss://blaze.mixin.one/', 'Mixin-Blaze-1',self, {});
-    self.ws.on("reconnect",function(){
-      if(self.onReconnect){
+    self.ws.on("error", (event) => {
+      if(self.onError){
+        self.onError(event);
+      }
+    });
+    self.ws.on("closed", (event) => {
+      if (self.onClosed) {
+        self.onClosed(event);
+      }
+    });
+    self.ws.on("reconnect", () => {
+      if (self.onReconnect) {
         self.onReconnect();
       }
     });
-    self.ws.on("connect",function(){
-      if(self.onConnect){
+    self.ws.on("connect", () => {
+      if (self.onConnect) {
         self.onConnect();
       }
     });
-    self.ws.on("destroyed",function(){
-      if(self.onDestroyed){
-        self.onDestroyed();
+    self.ws.on("destroyed", (event) => {
+      if (self.onDestroyed) {
+        self.onDestroyed(event);
       }
     });
-    self.ws.on("message",function(data){
-      if(self.onMessage){
+    self.ws.on("message", (data) => {
+      if (self.onMessage) {
         self.onMessage(data);
       }
     });
