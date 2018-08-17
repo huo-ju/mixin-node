@@ -3,7 +3,7 @@ const Uint64LE= require("int64-buffer").Uint64LE;
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const fs = require('fs');
-const zlib = require("zlib"); 
+const zlib = require("zlib");
 const forge = require('node-forge');
 const wsreconnect = require('./ws-reconnect');
 const WebSocket = require('ws');
@@ -34,7 +34,7 @@ let MIXINNODE = function(opts) {
   if(!self.pin || !self.aeskey || !self.client_id || !self.session_id || !self.privatekey){
     throw ("pin, aeskey, client_id, session_id, privatekey are require fields");
   }
-  self.account = new Account(opts); 
+  self.account = new Account(opts);
 
   self.encryptPIN = () =>{
     return this.account.encryptCustomPIN(self.pin, self.aeskey);
@@ -67,7 +67,7 @@ let MIXINNODE = function(opts) {
 
       let payload = {
         uid: self.client_id, //bot account id
-        sid: self.session_id, 
+        sid: self.session_id,
         iat: seconds ,
         exp: seconds_exp ,
         jti: self.uuidv4(),
@@ -87,7 +87,7 @@ let MIXINNODE = function(opts) {
       request(options, function(err,httpResponse,body){
         if(err){
           reject(err);
-          // err   
+          // err
         }else if(body.error){
           reject(JSON.parse(body.error));
           //err
@@ -103,7 +103,7 @@ let MIXINNODE = function(opts) {
     return new Promise((resolve, reject) => {
       const seconds = Math.floor(Date.now() / 1000);
       const seconds_exp = Math.floor(Date.now() / 1000) + self.timeout;
-      let encrypted_pin = self.encryptPIN();
+      // let encrypted_pin = self.encryptPIN();
       let transfer_sig_str = "GET/assets";
 
       let url = 'https://api.mixin.one/assets';
@@ -115,7 +115,7 @@ let MIXINNODE = function(opts) {
 
       let payload = {
         uid: self.client_id, //bot account id
-        sid: self.session_id, 
+        sid: self.session_id,
         iat: seconds ,
         exp: seconds_exp ,
         jti: self.uuidv4(),
@@ -134,7 +134,7 @@ let MIXINNODE = function(opts) {
       request(options, function(err,httpResponse,body){
         if(err){
           reject(err);
-          // err   
+          // err
         }else if(body.error){
           reject(JSON.parse(body.error));
           //err
@@ -159,7 +159,7 @@ let MIXINNODE = function(opts) {
 
         let payload = {
           uid: self.client_id, //bot account id
-          sid: self.session_id, 
+          sid: self.session_id,
           iat: seconds ,
           exp: seconds_exp ,
           jti: self.uuidv4(),
@@ -181,7 +181,7 @@ let MIXINNODE = function(opts) {
       request(options, function(err,httpResponse,body){
         if(err){
           reject(err);
-          // err   
+          // err
         }else if(body.error){
           reject(JSON.parse(body.error));
           //err
@@ -198,7 +198,7 @@ let MIXINNODE = function(opts) {
       let _order = "DESC";
       if(order)
         _order=order;
-        
+
       let path = `/network/snapshots?limit=${limit}&offset=${offset}&order=${_order}`;
       if(asset && asset != "")
         path = path + `&asset=${asset}`;
@@ -215,7 +215,7 @@ let MIXINNODE = function(opts) {
       request(options, function(err,httpResponse,body){
         if(err){
           reject(err);
-          // err   
+          // err
         }else if(body.error){
           reject(JSON.parse(body.error));
           //err
@@ -247,7 +247,7 @@ let MIXINNODE = function(opts) {
       request(options, function(err,httpResponse,body){
         if(err){
           reject(err);
-          // err   
+          // err
         }else if(body.error){
           reject(JSON.parse(body.error));
           //err
@@ -258,7 +258,7 @@ let MIXINNODE = function(opts) {
     });
   }
 
-  
+
   self.jwtToken = (method, uri, body) =>{
       let transfer_sig_str = method+uri+body;
       let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest("hex");
@@ -269,7 +269,7 @@ let MIXINNODE = function(opts) {
 
       let payload = {
         uid: self.client_id, //bot account id
-        sid: self.session_id, 
+        sid: self.session_id,
         iat: seconds ,
         exp: seconds_exp ,
         jti: self.uuidv4(),
@@ -278,7 +278,7 @@ let MIXINNODE = function(opts) {
       let token = jwt.sign(payload, self.privatekey,{ algorithm: 'RS512'});
       return token;
   }
-  
+
   self.tokenGET = (uri, body) => {
     return this.jwtToken("GET", uri, body);
   }
@@ -293,8 +293,8 @@ let MIXINNODE = function(opts) {
   self.ws_send = (message) => {
     return new Promise((resolve, reject) => {
       try {
-        let buf = new Buffer(JSON.stringify(message), 'utf-8');  
-        zlib.gzip(buf, function (_, zippedmsg) { 
+        let buf = new Buffer(JSON.stringify(message), 'utf-8');
+        zlib.gzip(buf, function (_, zippedmsg) {
           if(self.ws.socket.readyState == WebSocket.OPEN){
             self.ws.send(zippedmsg);
             resolve();
@@ -411,7 +411,7 @@ let MIXINNODE = function(opts) {
       }
     });
     self.ws.start();
-    return self.ws; 
+    return self.ws;
   }
 }
 
@@ -436,10 +436,10 @@ MIXINNODE.prototype.newuuid= function(){
 MIXINNODE.prototype.decode = function(data){
   return new Promise((resolve, reject) => {
     try{
-      zlib.gunzip(data, function(err, dezipped) { 
+      zlib.gunzip(data, function(err, dezipped) {
         let msgobj = JSON.parse(dezipped.toString());
         resolve(msgobj);
-      }) 
+      })
     }catch(err){
       reject(err);
     }
@@ -529,13 +529,13 @@ MIXINNODE.prototype.startPullNetwork = function(timeinterval, opts, eventHandler
         if(results[i].user_id){
           eventHandler(results[i]);
         }
-       
+
         let json = JSON.stringify(session);
         fs.writeFileSync('session.json', json, 'utf8');
       }
 
     }
-  
+
   }, timeinterval) ;
 }
 
