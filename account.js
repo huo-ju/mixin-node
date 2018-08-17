@@ -92,7 +92,6 @@ let ACCOUNT = function(opts) {
   };
 
   self.readAssets = (asset_id, useroptions) => {
-    console.log(useroptions);
     return new Promise((resolve, reject) => {
       const seconds        = Math.floor(Date.now() / 1000);
       const seconds_exp    = Math.floor(Date.now() / 1000) + self.timeout;
