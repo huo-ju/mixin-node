@@ -26,7 +26,7 @@ let ACCOUNT = function(opts) {
     self.privatekey = opts.privatekey;
   }
 
-  self.updatePin= (oldpin, newpin, aeskeybase64, useroptions) => {
+  self.updatePin = (oldpin, newpin, aeskeybase64, useroptions) => {
     return new Promise((resolve, reject) => {
 
       const seconds = Math.floor(Date.now() / 1000);
@@ -40,7 +40,7 @@ let ACCOUNT = function(opts) {
       let pin_json =
       {
         pin:      encrypted_pin,
-        old_pin: encrypted_oldpin 
+        old_pin: encrypted_oldpin
       };
 
       let pin_json_str = JSON.stringify(pin_json);
@@ -50,7 +50,7 @@ let ACCOUNT = function(opts) {
       let client_id = self.client_id;
       if(useroptions.client_id)
         client_id = useroptions.client_id;
-      
+
       let session_id = self.session_id;
       if(useroptions.session_id)
         session_id = useroptions.session_id;
@@ -61,7 +61,7 @@ let ACCOUNT = function(opts) {
 
       let payload = {
         uid: client_id, //bot account id
-        sid: session_id, 
+        sid: session_id,
         iat: seconds ,
         exp: seconds_exp ,
         jti: self.uuidv4(),
@@ -80,7 +80,7 @@ let ACCOUNT = function(opts) {
       request(options, function(err,httpResponse,body){
         if(err){
           reject(err);
-          // err   
+          // err
         }else if(body.error){
           reject(JSON.parse(body.error));
           //err
@@ -89,7 +89,49 @@ let ACCOUNT = function(opts) {
         }
       })
     });
-  }
+  };
+
+  self.readAssets = (asset_id, useroptions) => {
+    return new Promise((resolve, reject) => {
+      const seconds        = Math.floor(Date.now() / 1000);
+      const seconds_exp    = Math.floor(Date.now() / 1000) + self.timeout;
+      let transfer_sig_str = 'GET/assets';
+      let url = 'https://api.mixin.one/assets';
+      if (asset_id && asset_id.length === 36) {
+        transfer_sig_str = 'GET/assets/' + asset_id;
+        url = 'https://api.mixin.one/assets/' + asset_id;
+      }
+      let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest('hex');
+      let payload = {
+        uid : useroptions.client_id, // user account id
+        sid : useroptions.session_id,
+        iat : seconds,
+        exp : seconds_exp,
+        jti : self.uuidv4(),
+        sig : transfer_sig_sha256,
+      };
+      let token   = jwt.sign(payload, useroptions.privatekey, {algorithm: 'RS512'});
+      let options = {
+        url     : url,
+        method  : 'GET',
+        headers : {
+          'Authorization' : 'Bearer ' + token,
+          'Content-Type'  : 'application/json',
+        }
+      }
+      request(options, (err, httpResponse, body) => {
+        if (err) {
+          reject(err);
+          // err
+        } else if (body.error) {
+          reject(JSON.parse(body.error));
+          //err
+        } else {
+          resolve(JSON.parse(body));
+        }
+      })
+    });
+  };
 
   self.encryptCustomPIN = (pincode, aeskeybase64) =>{
     const seconds = Math.floor(Date.now() / 1000);
@@ -144,7 +186,7 @@ let ACCOUNT = function(opts) {
 
       let payload = {
         uid: self.client_id, //bot account id
-        sid: self.session_id, 
+        sid: self.session_id,
         iat: seconds ,
         exp: seconds_exp ,
         jti: self.uuidv4(),
@@ -192,20 +234,23 @@ let ACCOUNT = function(opts) {
       md: forge.md.sha256.create(),
       label: label
     });
-    
+
     let s = new Buffer(decrypted, 'binary').toString('base64');
     return s;
   }
-  
+
 }
 
 ACCOUNT.encryptCustomPIN = function(pincode, aeskeybase64) {
-
   return self.encryptCustomPIN(pincode, aeskeybase64);
 }
 
 ACCOUNT.prototype.createUser = function(username) {
   return this.createUser(username);
+}
+
+ACCOUNT.prototype.readAssets = function(asset_id, aeskeybase64, useroptions) {
+  return this.readAssets(asset_id, aeskeybase64, useroptions);
 }
 
 ACCOUNT.prototype.decryptRSAOAEP = function(privateKey, message, label) {
