@@ -543,8 +543,4 @@ MIXINNODE.prototype.stopPullNetwork= function(){
       this.pullNetworkflag = false;
 }
 
-
-
-
-
 module.exports = MIXINNODE;
