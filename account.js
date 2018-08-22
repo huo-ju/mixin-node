@@ -136,7 +136,7 @@ let ACCOUNT = function(opts) {
     });
   };
 
-  self.transfer = (asset_id, recipient_id, amount, memo, useroptions) => {
+  self.transfer = (asset_id, recipient_id, amount, memo, useroptions, trace_id) => {
     console.log(useroptions);
     return new Promise((resolve, reject) => {
       const seconds     = Math.floor(Date.now() / 1000);
@@ -155,7 +155,7 @@ let ACCOUNT = function(opts) {
         counter_user_id : recipient_id,
         amount          : amount,
         pin             : encrypted_pin,
-        trace_id        : self.uuidv4(),
+        trace_id        : trace_id || self.uuidv4(),
       };
       if (memo != '') {
         transfer_json['memo'] = memo;
