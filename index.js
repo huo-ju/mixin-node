@@ -277,7 +277,7 @@ let MIXINNODE = function(opts) {
         jti: self.uuidv4(),
         sig: transfer_sig_sha256
       };
-      console.log(payload);
+      //console.log(payload);
       let token = jwt.sign(payload, self.privatekey,{ algorithm: 'RS512'});
       return token;
   }
