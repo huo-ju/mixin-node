@@ -137,7 +137,7 @@ let ACCOUNT = function(opts) {
   };
 
   self.transfer = (asset_id, recipient_id, amount, memo, useroptions, trace_id) => {
-    console.log(useroptions);
+    // console.log(useroptions);
     return new Promise((resolve, reject) => {
       const seconds     = Math.floor(Date.now() / 1000);
       const seconds_exp = Math.floor(Date.now() / 1000) + self.timeout;

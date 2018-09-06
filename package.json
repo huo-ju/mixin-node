@@ -24,6 +24,7 @@
     "jsonwebtoken": "^8.2.1",
     "node-forge": "^0.7.5",
     "request": "^2.85.0",
+    "rfc3339nano": "^1.0.2",
     "ws": "^5.1.1"
   }
 }
