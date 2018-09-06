@@ -9,7 +9,7 @@ const wsreconnect = require('./ws-reconnect');
 const WebSocket = require('ws');
 const interval = require('interval-promise');
 const Account = require('./account');
-
+const rfc3339nano = require('rfc3339nano');
 
 let MIXINNODE = function(opts) {
   let self = this;
@@ -522,7 +522,10 @@ MIXINNODE.prototype.startPullNetwork = function(timeinterval, opts, eventHandler
         }
       }
 
-      let results = await this.readNetworkSnapshots(session.offset, opts.asset_id, opts.limit, opts.order)
+      let results = await this.readNetworkSnapshots(
+        rfc3339nano.adjustRfc3339ByNano(session.offset, 1),
+        opts.asset_id, opts.limit, opts.order
+      );
       results = results.data;
       for(let i in results){
         session.offset = results[i].created_at;
