@@ -91,6 +91,59 @@ let ACCOUNT = function(opts) {
     });
   };
 
+  self.updateProfile = (profile, useroptions) => {
+    return new Promise((resolve, reject) => {
+      const seconds = Math.floor(Date.now() / 1000);
+      const seconds_exp = Math.floor(Date.now() / 1000) + self.timeout;
+
+      let profile_json_str = JSON.stringify(profile);
+      let profile_sig_str = "POST/me"+profile_json_str;
+      let profile_sig_sha256 = crypto.createHash('sha256').update(profile_sig_str).digest("hex");
+
+      let client_id = self.client_id;
+      if(useroptions.client_id)
+        client_id = useroptions.client_id;
+
+      let session_id = self.session_id;
+      if(useroptions.session_id)
+        session_id = useroptions.session_id;
+
+      let privatekey = self.privatekey;
+      if(useroptions.privatekey)
+        privatekey = useroptions.privatekey;
+
+      let payload = {
+        uid: client_id, //bot account id
+        sid: session_id,
+        iat: seconds ,
+        exp: seconds_exp ,
+        jti: self.uuidv4(),
+        sig: profile_sig_sha256
+      };
+      let token = jwt.sign(payload, privatekey,{ algorithm: 'RS512'});
+      let options ={
+        url:'https://api.mixin.one/me',
+        method:"POST",
+        body: profile_json_str,
+        headers: {
+          'Authorization': 'Bearer '+token,
+          'Content-Type' : 'application/json'
+        }
+      }
+      request(options, function(err,httpResponse,body){
+        if(err){
+          reject(err);
+          // err
+        }else if(body.error){
+          reject(JSON.parse(body.error));
+          //err
+        }else{
+          resolve(JSON.parse(body));
+        }
+      })
+    });
+  };
+
   self.readAssets = (asset_id, useroptions) => {
     // console.log(useroptions);
     return new Promise((resolve, reject) => {
@@ -325,6 +378,10 @@ ACCOUNT.prototype.decryptRSAOAEP = function(privateKey, message, label) {
 
 ACCOUNT.prototype.updatePin = function(oldpin, newpin, aeskeybase64, options) {
   return this.updatePin(oldpin, newpin, aeskeybase64, options);
+}
+
+ACCOUNT.prototype.updateProfile = function(profile, options) {
+  return this.updateProfile(profile, options);
 }
 
 module.exports = ACCOUNT;
