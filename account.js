@@ -5,6 +5,7 @@ const fs = require('fs');
 const forge = require('node-forge');
 const rsa = forge.pki.rsa;
 const jwt = require('jsonwebtoken');
+const requestHandler = require('./requestHandler');
 
 let ACCOUNT = function(opts) {
   let self = this;
@@ -78,15 +79,7 @@ let ACCOUNT = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        if(err){
-          reject(err);
-          // err
-        }else if(body.error){
-          reject(JSON.parse(body.error));
-          //err
-        }else{
-          resolve(JSON.parse(body));
-        }
+        requestHandler(err, body, resolve, reject);
       })
     });
   };
@@ -176,15 +169,7 @@ let ACCOUNT = function(opts) {
         }
       }
       request(options, (err, httpResponse, body) => {
-        if (err) {
-          reject(err);
-          // err
-        } else if (body.error) {
-          reject(JSON.parse(body.error));
-          //err
-        } else {
-          resolve(JSON.parse(body));
-        }
+        requestHandler(err, body, resolve, reject);
       })
     });
   };
@@ -239,15 +224,7 @@ let ACCOUNT = function(opts) {
         },
       }
       request(options, function(err, httpResponse, body) {
-        if (err) {
-          reject(err);
-          // err
-        } else if (body.error) {
-          reject(JSON.parse(body.error));
-          //err
-        } else {
-          resolve(JSON.parse(body));
-        }
+        requestHandler(err, body, resolve, reject);
       })
     });
   };
@@ -322,18 +299,14 @@ let ACCOUNT = function(opts) {
         }
       }
       request(options, function(err,httpresponse,body){
-        if(err){
-          reject(err);
-        }else if(body.error){
-          reject(JSON.parse(body.error));
-        }else{
+        requestHandler(err, body, () => {
           var result = {};
           result.privatekey = key.privatekeypem;
           result.publickey = key.publickeypem;
           result.data = JSON.parse(body).data;
           result.data.aeskeybase64 = self.decryptRSAOAEP(key.privatekeypem, result.data.pin_token, result.data.session_id);
           resolve(result);
-        }
+        }, reject);
       });
     });
   });

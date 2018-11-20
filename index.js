@@ -9,6 +9,8 @@ const wsreconnect = require('./ws-reconnect');
 const WebSocket = require('ws');
 const interval = require('interval-promise');
 const Account = require('./account');
+
+const requestHandler = require('./requestHandler');
 const rfc3339nano = require('rfc3339nano');
 
 let MIXINNODE = function(opts) {
@@ -85,15 +87,7 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        if(err){
-          reject(err);
-          // err
-        }else if(body.error){
-          reject(JSON.parse(body.error));
-          //err
-        }else{
-          resolve(JSON.parse(body));
-        }
+        requestHandler(err, body, resolve, reject);
       })
 
     });
@@ -132,15 +126,7 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        if(err){
-          reject(err);
-          // err
-        }else if(body.error){
-          reject(JSON.parse(body.error));
-          //err
-        }else{
-          resolve(JSON.parse(body));
-        }
+        requestHandler(err, body, resolve, reject);
       })
 
     });
@@ -179,15 +165,7 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        if(err){
-          reject(err);
-          // err
-        }else if(body.error){
-          reject(JSON.parse(body.error));
-          //err
-        }else{
-          resolve(JSON.parse(body));
-        }
+        requestHandler(err, body, resolve, reject);
       });
 
     });
@@ -213,15 +191,7 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        if(err){
-          reject(err);
-          // err
-        }else if(body.error){
-          reject(JSON.parse(body.error));
-          //err
-        }else{
-          resolve(JSON.parse(body));
-        }
+        requestHandler(err, body, resolve, reject);
       });
     });
   };
@@ -245,15 +215,7 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        if(err){
-          reject(err);
-          // err
-        }else if(body.error){
-          reject(JSON.parse(body.error));
-          //err
-        }else{
-          resolve(JSON.parse(body));
-        }
+        requestHandler(err, body, resolve, reject);
       })
     });
   }
