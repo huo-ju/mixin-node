@@ -5,7 +5,7 @@ const fs = require('fs');
 const forge = require('node-forge');
 const rsa = forge.pki.rsa;
 const jwt = require('jsonwebtoken');
-const errorHandler = require('./errorHandler');
+const requestHandler = require('./requestHandler');
 
 let ACCOUNT = function(opts) {
   let self = this;
@@ -79,7 +79,7 @@ let ACCOUNT = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        errorHandler(err, body, resolve, reject);
+        requestHandler(err, body, resolve, reject);
       })
     });
   };
@@ -116,7 +116,7 @@ let ACCOUNT = function(opts) {
         }
       }
       request(options, (err, httpResponse, body) => {
-        errorHandler(err, body, resolve, reject);
+        requestHandler(err, body, resolve, reject);
       })
     });
   };
@@ -171,7 +171,7 @@ let ACCOUNT = function(opts) {
         },
       }
       request(options, function(err, httpResponse, body) {
-        errorHandler(err, body, resolve, reject);
+        requestHandler(err, body, resolve, reject);
       })
     });
   };
@@ -246,7 +246,7 @@ let ACCOUNT = function(opts) {
         }
       }
       request(options, function(err,httpresponse,body){
-        errorHandler(err, body, () => {
+        requestHandler(err, body, () => {
           var result = {};
           result.privatekey = key.privatekeypem;
           result.publickey = key.publickeypem;

@@ -9,7 +9,7 @@ const wsreconnect = require('./ws-reconnect');
 const WebSocket = require('ws');
 const interval = require('interval-promise');
 const Account = require('./account');
-const errorHandler = require('./errorHandler');
+const requestHandler = require('./requestHandler');
 
 let MIXINNODE = function(opts) {
   let self = this;
@@ -85,7 +85,7 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        errorHandler(err, body, resolve, reject);
+        requestHandler(err, body, resolve, reject);
       })
 
     });
@@ -124,7 +124,7 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        errorHandler(err, body, resolve, reject);
+        requestHandler(err, body, resolve, reject);
       })
 
     });
@@ -163,7 +163,7 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        errorHandler(err, body, resolve, reject);
+        requestHandler(err, body, resolve, reject);
       });
 
     });
@@ -189,7 +189,7 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        errorHandler(err, body, resolve, reject);
+        requestHandler(err, body, resolve, reject);
       });
     });
   };
@@ -213,7 +213,7 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        errorHandler(err, body, resolve, reject);
+        requestHandler(err, body, resolve, reject);
       })
     });
   }
