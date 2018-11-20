@@ -85,14 +85,16 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        if(err){
-          reject(err);
-          // err
-        }else if(body.error){
-          reject(JSON.parse(body.error));
-          //err
-        }else{
-          resolve(JSON.parse(body));
+        try{
+          if(err){
+            reject(err);
+          }else if(body.error){
+            reject(JSON.parse(body.error));
+          }else{
+            resolve(JSON.parse(body));
+          }
+        }catch(e){
+          reject(e);
         }
       })
 
@@ -132,14 +134,16 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        if(err){
-          reject(err);
-          // err
-        }else if(body.error){
-          reject(JSON.parse(body.error));
-          //err
-        }else{
-          resolve(JSON.parse(body));
+        try{
+          if(err){
+            reject(err);
+          }else if(body.error){
+            reject(JSON.parse(body.error));
+          }else{
+            resolve(JSON.parse(body));
+          }
+        }catch(e){
+          reject(e);
         }
       })
 
@@ -179,14 +183,16 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        if(err){
-          reject(err);
-          // err
-        }else if(body.error){
-          reject(JSON.parse(body.error));
-          //err
-        }else{
-          resolve(JSON.parse(body));
+        try{
+          if(err){
+            reject(err);
+          }else if(body.error){
+            reject(JSON.parse(body.error));
+          }else{
+            resolve(JSON.parse(body));
+          }
+        }catch(e){
+          reject(e);
         }
       });
 
@@ -213,14 +219,16 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        if(err){
-          reject(err);
-          // err
-        }else if(body.error){
-          reject(JSON.parse(body.error));
-          //err
-        }else{
-          resolve(JSON.parse(body));
+        try{
+          if(err){
+            reject(err);
+          }else if(body.error){
+            reject(JSON.parse(body.error));
+          }else{
+            resolve(JSON.parse(body));
+          }
+        }catch(e){
+          reject(e);
         }
       });
     });
@@ -245,14 +253,16 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        if(err){
-          reject(err);
-          // err
-        }else if(body.error){
-          reject(JSON.parse(body.error));
-          //err
-        }else{
-          resolve(JSON.parse(body));
+        try{
+          if(err){
+            reject(err);
+          }else if(body.error){
+            reject(JSON.parse(body.error));
+          }else{
+            resolve(JSON.parse(body));
+          }
+        }catch(e){
+          reject(e);
         }
       })
     });
