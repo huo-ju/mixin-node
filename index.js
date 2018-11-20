@@ -9,7 +9,9 @@ const wsreconnect = require('./ws-reconnect');
 const WebSocket = require('ws');
 const interval = require('interval-promise');
 const Account = require('./account');
+
 const requestHandler = require('./requestHandler');
+const rfc3339nano = require('rfc3339nano');
 
 let MIXINNODE = function(opts) {
   let self = this;
@@ -219,13 +221,15 @@ let MIXINNODE = function(opts) {
   }
 
 
-  self.jwtToken = (method, uri, body) =>{
+  self.jwtToken = (method, uri, body, opts) =>{
       let transfer_sig_str = method+uri+body;
       let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest("hex");
 
       const seconds = Math.floor(Date.now() / 1000);
       let time = new Uint64LE(seconds);
-      const seconds_exp = Math.floor(Date.now() / 1000) + self.timeout;
+      let seconds_exp = Math.floor(Date.now() / 1000) + self.timeout;
+      if(opts && opts.timeout)
+        seconds_exp = Math.floor(Date.now() / 1000) + opts.timeout;
 
       let payload = {
         uid: self.client_id, //bot account id
@@ -235,12 +239,13 @@ let MIXINNODE = function(opts) {
         jti: self.uuidv4(),
         sig: transfer_sig_sha256
       };
+      //console.log(payload);
       let token = jwt.sign(payload, self.privatekey,{ algorithm: 'RS512'});
       return token;
   }
 
-  self.tokenGET = (uri, body) => {
-    return this.jwtToken("GET", uri, body);
+  self.tokenGET = (uri, body, opts) => {
+    return this.jwtToken("GET", uri, body, opts);
   }
 
   self.uuidv4 = () => {
@@ -456,6 +461,11 @@ MIXINNODE.prototype.readSnapshots= function(offset, asset, limit, order){
 }
 
 
+MIXINNODE.prototype.getViewToken= function(uri, opts){
+  return this.tokenGET(uri, "", opts);
+}
+
+
 MIXINNODE.prototype.signJWT= function(payload){
   let token = jwt.sign(payload, this.share_secret);
   return token;
@@ -482,7 +492,10 @@ MIXINNODE.prototype.startPullNetwork = function(timeinterval, opts, eventHandler
         }
       }
 
-      let results = await this.readNetworkSnapshots(session.offset, opts.asset_id, opts.limit, opts.order)
+      let results = await this.readNetworkSnapshots(
+        rfc3339nano.adjustRfc3339ByNano(session.offset, 1),
+        opts.asset_id, opts.limit, opts.order
+      );
       results = results.data;
       for(let i in results){
         session.offset = results[i].created_at;
