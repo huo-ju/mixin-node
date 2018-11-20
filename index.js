@@ -9,7 +9,7 @@ const wsreconnect = require('./ws-reconnect');
 const WebSocket = require('ws');
 const interval = require('interval-promise');
 const Account = require('./account');
-
+const errorHandler = require('./errorHandler');
 
 let MIXINNODE = function(opts) {
   let self = this;
@@ -85,17 +85,7 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        try{
-          if(err){
-            reject(err);
-          }else if(body.error){
-            reject(JSON.parse(body.error));
-          }else{
-            resolve(JSON.parse(body));
-          }
-        }catch(e){
-          reject(e);
-        }
+        errorHandler(err, body, resolve, reject);
       })
 
     });
@@ -134,17 +124,7 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        try{
-          if(err){
-            reject(err);
-          }else if(body.error){
-            reject(JSON.parse(body.error));
-          }else{
-            resolve(JSON.parse(body));
-          }
-        }catch(e){
-          reject(e);
-        }
+        errorHandler(err, body, resolve, reject);
       })
 
     });
@@ -183,17 +163,7 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        try{
-          if(err){
-            reject(err);
-          }else if(body.error){
-            reject(JSON.parse(body.error));
-          }else{
-            resolve(JSON.parse(body));
-          }
-        }catch(e){
-          reject(e);
-        }
+        errorHandler(err, body, resolve, reject);
       });
 
     });
@@ -219,17 +189,7 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        try{
-          if(err){
-            reject(err);
-          }else if(body.error){
-            reject(JSON.parse(body.error));
-          }else{
-            resolve(JSON.parse(body));
-          }
-        }catch(e){
-          reject(e);
-        }
+        errorHandler(err, body, resolve, reject);
       });
     });
   };
@@ -253,17 +213,7 @@ let MIXINNODE = function(opts) {
         }
       }
       request(options, function(err,httpResponse,body){
-        try{
-          if(err){
-            reject(err);
-          }else if(body.error){
-            reject(JSON.parse(body.error));
-          }else{
-            resolve(JSON.parse(body));
-          }
-        }catch(e){
-          reject(e);
-        }
+        errorHandler(err, body, resolve, reject);
       })
     });
   }
