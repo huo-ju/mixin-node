@@ -492,19 +492,23 @@ MIXINNODE.prototype.startPullNetwork = function(timeinterval, opts, eventHandler
         }
       }
 
-      let results = await this.readNetworkSnapshots(
-        rfc3339nano.adjustRfc3339ByNano(session.offset, 1),
-        opts.asset_id, opts.limit, opts.order
-      );
-      results = results.data;
-      for(let i in results){
-        session.offset = results[i].created_at;
-        if(results[i].user_id){
-          eventHandler(results[i]);
+      try {
+        let results = await this.readNetworkSnapshots(
+          rfc3339nano.adjustRfc3339ByNano(session.offset, 1),
+          opts.asset_id, opts.limit, opts.order
+        );
+        results = results.data;
+        for(let i in results){
+          session.offset = results[i].created_at;
+          if(results[i].user_id){
+            eventHandler(results[i]);
+          }
+  
+          let json = JSON.stringify(session);
+          fs.writeFileSync('session.json', json, 'utf8');
         }
-
-        let json = JSON.stringify(session);
-        fs.writeFileSync('session.json', json, 'utf8');
+      } catch (err) {
+        console.log(err);
       }
 
     }
