@@ -196,7 +196,24 @@ let MIXINNODE = function(opts) {
     });
   };
 
-
+  self.readNetworkTransfer = (trace_id) => {
+    return new Promise((resolve, reject) => {
+      let path = `/transfers/trace/${trace_id}`;
+      let url = "https://api.mixin.one"+path;
+      let token = self.tokenGET(path,"");
+      let options ={
+        url: url,
+        method:"GET",
+        headers: {
+          'Authorization': 'Bearer '+token,
+          'Content-Type' : '0'
+        }
+      }
+      request(options, function(err,httpResponse,body){
+        requestHandler(err, body, resolve, reject);
+      });
+    });
+  };
 
   self.requestAccessToken = (code) =>{
     return new Promise((resolve, reject) => {
@@ -460,6 +477,9 @@ MIXINNODE.prototype.readSnapshots= function(offset, asset, limit, order){
   return this.readNetworkSnapshots(offset, asset, limit, order);
 }
 
+MIXINNODE.prototype.readTransfer= function(trace_id){
+  return this.readNetworkTransfer(trace_id);
+}
 
 MIXINNODE.prototype.getViewToken= function(uri, opts){
   return this.tokenGET(uri, "", opts);
@@ -503,7 +523,7 @@ MIXINNODE.prototype.startPullNetwork = function(timeinterval, opts, eventHandler
           if(results[i].user_id){
             eventHandler(results[i]);
           }
-  
+
           let json = JSON.stringify(session);
           fs.writeFileSync('session.json', json, 'utf8');
         }
