@@ -215,6 +215,25 @@ let MIXINNODE = function(opts) {
     });
   };
 
+  self.readNetworkSnapshot = (snapshot_id, view_token) => {
+    return new Promise((resolve, reject) => {
+      let path = `/network/snapshots/${snapshot_id}`;
+      let url = "https://api.mixin.one"+path;
+      let token = view_token || self.tokenGET(path,"");
+      let options ={
+        url: url,
+        method:"GET",
+        headers: {
+          'Authorization': 'Bearer '+token,
+          'Content-Type' : '0'
+        }
+      }
+      request(options, function(err,httpResponse,body){
+        requestHandler(err, body, resolve, reject);
+      });
+    });
+  };
+
   self.requestAccessToken = (code) =>{
     return new Promise((resolve, reject) => {
       let auth_json = {
@@ -479,6 +498,10 @@ MIXINNODE.prototype.readSnapshots= function(offset, asset, limit, order){
 
 MIXINNODE.prototype.readTransfer= function(trace_id){
   return this.readNetworkTransfer(trace_id);
+}
+
+MIXINNODE.prototype.readSnapshot= function(snapshot_id, view_token){
+  return this.readNetworkSnapshot(snapshot_id, view_token);
 }
 
 MIXINNODE.prototype.getViewToken= function(uri, opts){
