@@ -42,6 +42,29 @@ let MIXINNODE = function(opts) {
     return this.account.encryptCustomPIN(self.pin, self.aeskey);
   }
 
+  // https://developers.mixin.one/api/h-conversations/create-conversation/
+  // https://github.com/wangshijun/mixin-node-client/blob/f1c22b34c939b694db9cec72db3e941da10ac77e/lib/base.js
+  self.newConversationId = (userId, recipientId) => {
+    userId = userId.toString();
+    recipientId = recipientId.toString();
+    let [minId, maxId] = [userId, recipientId];
+    if (minId > maxId) {
+      [minId, maxId] = [recipientId, userId];
+    }
+    const hash = crypto.createHash('md5');
+    hash.update(minId);
+    hash.update(maxId);
+    const bytes = hash.digest();
+    bytes[6] = (bytes[6] & 0x0f) | 0x30;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    // eslint-disable-next-line unicorn/prefer-spread
+    const digest = Array.from(bytes, byte => `0${(byte & 0xff).toString(16)}`.slice(-2)).join('');
+    const uuid = `${digest.slice(0, 8)}-${digest.slice(8, 12)}-${digest.slice(12, 16)}-${digest.slice(
+      16,
+      20
+    )}-${digest.slice(20, 32)}`;
+    return uuid;
+  };
 
   self.transferFromBot = (asset_id, recipient_id, amount, memo) => {
     return new Promise((resolve, reject) => {
@@ -369,12 +392,43 @@ let MIXINNODE = function(opts) {
     });
   };
 
-  self.send_CREATE_MESSAGE = (opts, msgobj) => {
+  self.send_CREATE_MESSAGE = (opts, msgobj, options) => {
     return new Promise((resolve, reject) => {
+      options = options || {};
       try {
         let message_id = self.uuidv4();
-        let params = { "conversation_id": msgobj.data.conversation_id, "recipient_id": msgobj.data.user_id, "message_id": message_id, "category": opts.category, "data": opts.data }
+        let params = { "conversation_id": msgobj.data.conversation_id || self.newConversationId(self.client_id, msgobj.data.user_id), "recipient_id": msgobj.data.user_id, "message_id": message_id, "category": opts.category, "data": opts.data }
         let message = { id: self.uuidv4(), "action": "CREATE_MESSAGE", params: params }
+
+        if (options.http) {
+          const seconds = Math.floor(Date.now() / 1000);
+          const seconds_exp = Math.floor(Date.now() / 1000) + self.timeout;
+          let message_json_str = JSON.stringify([params]);
+          let message_sig_str = "POST/messages" + message_json_str;
+          let message_sig_sha256 = crypto.createHash('sha256').update(message_sig_str).digest("hex");
+          let payload = {
+            uid: self.client_id, //bot account id
+            sid: self.session_id,
+            iat: seconds,
+            exp: seconds_exp,
+            jti: self.uuidv4(),
+            sig: message_sig_sha256
+          };
+          let token = jwt.sign(payload, self.privatekey, { algorithm: 'RS512' });
+          let options = {
+            url: 'https://api.mixin.one/messages',
+            method: "POST",
+            body: message_json_str,
+            headers: {
+              'Authorization': 'Bearer ' + token,
+              'Content-Type': 'application/json'
+            }
+          }
+          return request(options, function(err, httpResponse, body) {
+            requestHandler(err, body, resolve, reject);
+          })
+        }
+
         self.ws_send(message).then(function() {
           resolve(message_id);
         }).catch(function(err) {
@@ -473,25 +527,25 @@ MIXINNODE.prototype.getwsopts = function() {
   return this.wsopts();
 }
 
-MIXINNODE.prototype.sendText = function(text, msgobj) {
+MIXINNODE.prototype.sendText = function(text, msgobj, options) {
   let opts = {};
   opts.category = "PLAIN_TEXT";
   opts.data = new Buffer(text).toString('base64');
-  return this.send_CREATE_MESSAGE(opts, msgobj);
+  return this.send_CREATE_MESSAGE(opts, msgobj, options);
 }
 
-MIXINNODE.prototype.sendImage = function(base64data, msgobj) {
+MIXINNODE.prototype.sendImage = function(base64data, msgobj, options) {
   let opts = {};
   opts.category = "PLAIN_IMAGE";
   opts.data = base64data;
-  return this.send_CREATE_MESSAGE(opts, msgobj);
+  return this.send_CREATE_MESSAGE(opts, msgobj, options);
 }
 
-MIXINNODE.prototype.sendButton = function(text, msgobj) {
+MIXINNODE.prototype.sendButton = function(text, msgobj, options) {
   let opts = {};
   opts.category = "APP_BUTTON_GROUP";
   opts.data = new Buffer(text).toString('base64');
-  return this.send_CREATE_MESSAGE(opts, msgobj);
+  return this.send_CREATE_MESSAGE(opts, msgobj, options);
 }
 
 MIXINNODE.prototype.sendMsg = function(action, opts) {
