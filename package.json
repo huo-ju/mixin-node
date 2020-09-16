@@ -22,7 +22,7 @@
     "int64-buffer": "^0.1.10",
     "interval-promise": "^1.2.0",
     "jsonwebtoken": "^8.2.1",
-    "node-forge": "^0.7.5",
+    "node-forge": "^0.10.0",
     "request": "^2.85.0",
     "rfc3339nano": "^1.0.2",
     "ws": "^5.1.1"
