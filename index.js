@@ -124,21 +124,18 @@ let ACCOUNT = function(opts) {
         }
       }
       fetch('https://api.mixin.one/me', options).then(
-        requestHandler(res, resolve, reject)
+        requestHandler(res, (err, body) => {
+          if (err) {
+            reject(err);
+            // err
+          } else if (body.error) {
+            reject(JSON.parse(body.error));
+            //err
+          } else {
+            resolve(JSON.parse(body));
+          }
+        }, reject)
       );
-
-
-      request(options, function(err, httpResponse, body) {
-        if (err) {
-          reject(err);
-          // err
-        } else if (body.error) {
-          reject(JSON.parse(body.error));
-          //err
-        } else {
-          resolve(JSON.parse(body));
-        }
-      })
     });
   };
 
@@ -166,16 +163,13 @@ let ACCOUNT = function(opts) {
         payload, useroptions.privateKey, { algorithm: 'RS512' }
       );
       let options = {
-        url: url,
         method: 'GET',
         headers: {
           'Authorization': 'Bearer ' + token,
           'Content-Type': 'application/json',
         }
       }
-      request(options, (err, httpResponse, body) => {
-        requestHandler(err, body, resolve, reject);
-      })
+      fetch(url, options).then(requestHandler(res, resolve, reject));
     });
   };
 
@@ -220,7 +214,6 @@ let ACCOUNT = function(opts) {
         payload, useroptions.privateKey, { algorithm: 'RS512' }
       );
       let options = {
-        url: 'https://api.mixin.one/transfers',
         method: 'POST',
         body: transfer_json_str,
         headers: {
@@ -228,9 +221,9 @@ let ACCOUNT = function(opts) {
           'Content-Type': 'application/json',
         },
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      })
+      fetch('https://api.mixin.one/transfers', options).then(
+        requestHandler(res, resolve, reject)
+      );
     });
   };
 
@@ -294,7 +287,6 @@ let ACCOUNT = function(opts) {
         };
         let token = jwt.sign(payload, self.privatekey, { algorithm: 'RS512' });
         let options = {
-          url: 'https://api.mixin.one/users',
           method: "Post",
           body: createuser_json_str,
           headers: {
@@ -302,16 +294,16 @@ let ACCOUNT = function(opts) {
             'Content-Type': 'application/json'
           }
         }
-        request(options, function(err, httpresponse, body) {
-          requestHandler(err, body, () => {
+        fetch('https://api.mixin.one/users', options).then(
+          requestHandler(res, (body) => {
             var result = {};
             result.privatekey = key.privatekeypem;
             result.publickey = key.publickeypem;
             result.data = JSON.parse(body).data;
             result.data.aeskeybase64 = self.decryptRSAOAEP(key.privatekeypem, result.data.pin_token, result.data.session_id);
             resolve(result);
-          }, reject);
-        });
+          }, reject)
+        );
       });
     });
   }
