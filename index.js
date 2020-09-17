@@ -1,10 +1,11 @@
+'use strict';
+
 const request = require('request');
 const Uint64LE = require("int64-buffer").Uint64LE;
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const fs = require('fs');
 const zlib = require("zlib");
-const forge = require('node-forge');
 const wsreconnect = require('./ws-reconnect');
 const WebSocket = require('ws');
 const interval = require('interval-promise');
