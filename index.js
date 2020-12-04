@@ -549,6 +549,13 @@ MIXINNODE.prototype.sendButton = function(text, msgobj, options) {
   return this.send_CREATE_MESSAGE(opts, msgobj, options);
 }
 
+MIXINNODE.prototype.sendCard = function(text, msgobj, options) {
+  let opts = {};
+  opts.category = "APP_CARD";
+  opts.data = new Buffer(text).toString('base64');
+  return this.send_CREATE_MESSAGE(opts, msgobj, options);
+}
+
 MIXINNODE.prototype.sendMsg = function(action, opts) {
   switch (action) {
     case "ACKNOWLEDGE_MESSAGE_RECEIPT":
