@@ -280,6 +280,25 @@ let MIXINNODE = function(opts) {
     });
   }
 
+  self.readUser = (uuid) => {
+    return new Promise((resolve, reject) => {
+      let path = `/users/${uuid}`;
+      let url = "https://api.mixin.one" + path;
+      let token = self.tokenGET(path, "");
+      let options = {
+        url: url,
+        method: "GET",
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': '0'
+        }
+      }
+      request(options, function(err, httpResponse, body) {
+        requestHandler(err, body, resolve, reject);
+      });
+    });
+  };
+
   self.searchUser = (idOrPhone) => {
     return new Promise((resolve, reject) => {
       let path = `/search/${idOrPhone}`;
@@ -570,6 +589,10 @@ MIXINNODE.prototype.sendMsg = function(action, opts) {
 
 MIXINNODE.prototype.requestAccessToken = function(code) {
   return this.requestAccessToken(code);
+}
+
+MIXINNODE.prototype.readUser = function(uuid) {
+  return this.readUser(uuid);
 }
 
 MIXINNODE.prototype.searchUser = function(idOrPhone) {
