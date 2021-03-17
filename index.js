@@ -23,6 +23,8 @@ let MIXINNODE = function(opts) {
   self.client_id = opts.client_id;
   self.session_id = opts.session_id;
   self.timeout = opts.timeout || 3600;
+  self.api_domain = opts.api_domain || 'https://api.mixin.one';
+  self.ws_domain = opts.ws_domain || 'wss://blaze.mixin.one/';
   if (opts.client_secret)
     self.client_secret = opts.client_secret;
   if (opts.share_secret)
@@ -102,7 +104,7 @@ let MIXINNODE = function(opts) {
       let token = jwt.sign(payload, self.privatekey, { algorithm: 'RS512' });
 
       let options = {
-        url: 'https://api.mixin.one/transfers',
+        url: `${self.api_domain}/transfers`,
         method: "POST",
         body: transfer_json_str,
         headers: {
@@ -124,10 +126,10 @@ let MIXINNODE = function(opts) {
       // let encrypted_pin = self.encryptPIN();
       let transfer_sig_str = "GET/assets";
 
-      let url = 'https://api.mixin.one/assets';
+      let url = `${self.api_domain}/assets`;
       if (asset_id && asset_id.length == 36) {
         transfer_sig_str = "GET/assets/" + asset_id;
-        url = 'https://api.mixin.one/assets/' + asset_id;
+        url = `${self.api_domain}/assets/` + asset_id;
       }
       let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest("hex");
 
@@ -158,7 +160,7 @@ let MIXINNODE = function(opts) {
 
   self.readProfile = (access_token) => {
     return new Promise((resolve, reject) => {
-      let url = 'https://api.mixin.one/me';
+      let url = `${self.api_domain}/me`;
       let token = "";
       if (!access_token) {
         const seconds = Math.floor(Date.now() / 1000);
@@ -204,7 +206,7 @@ let MIXINNODE = function(opts) {
       let path = `/network/snapshots?limit=${limit}&offset=${offset}&order=${_order}`;
       if (asset && asset != "")
         path = path + `&asset=${asset}`;
-      let url = "https://api.mixin.one" + path;
+      let url = self.api_domain + path;
       let token = self.tokenGET(path, "");
       let options = {
         url: url,
@@ -223,7 +225,7 @@ let MIXINNODE = function(opts) {
   self.readNetworkTransfer = (trace_id) => {
     return new Promise((resolve, reject) => {
       let path = `/transfers/trace/${trace_id}`;
-      let url = "https://api.mixin.one" + path;
+      let url = self.api_domain + path;
       let token = self.tokenGET(path, "");
       let options = {
         url: url,
@@ -242,7 +244,7 @@ let MIXINNODE = function(opts) {
   self.readNetworkSnapshot = (snapshot_id, view_token) => {
     return new Promise((resolve, reject) => {
       let path = `/network/snapshots/${snapshot_id}`;
-      let url = "https://api.mixin.one" + path;
+      let url = self.api_domain + path;
       let token = view_token || self.tokenGET(path, "");
       let options = {
         url: url,
@@ -267,7 +269,7 @@ let MIXINNODE = function(opts) {
       };
       let auth_json_str = JSON.stringify(auth_json);
       let options = {
-        url: 'https://api.mixin.one/oauth/token',
+        url: `${self.api_domain}/oauth/token`,
         method: "POST",
         body: auth_json_str,
         headers: {
@@ -283,7 +285,7 @@ let MIXINNODE = function(opts) {
   self.readUser = (uuid) => {
     return new Promise((resolve, reject) => {
       let path = `/users/${uuid}`;
-      let url = "https://api.mixin.one" + path;
+      let url = self.api_domain + path;
       let token = self.tokenGET(path, "");
       let options = {
         url: url,
@@ -302,7 +304,7 @@ let MIXINNODE = function(opts) {
   self.searchUser = (idOrPhone) => {
     return new Promise((resolve, reject) => {
       let path = `/search/${idOrPhone}`;
-      let url = "https://api.mixin.one" + path;
+      let url = self.api_domain + path;
       let token = self.tokenGET(path, "");
       let options = {
         url: url,
@@ -436,7 +438,7 @@ let MIXINNODE = function(opts) {
           };
           let token = jwt.sign(payload, self.privatekey, { algorithm: 'RS512' });
           let options = {
-            url: 'https://api.mixin.one/messages',
+            url: `${self.api_domain}/messages`,
             method: "POST",
             body: message_json_str,
             headers: {
@@ -472,7 +474,7 @@ let MIXINNODE = function(opts) {
   }
 
   self.startws = () => {
-    self.ws = new wsreconnect('wss://blaze.mixin.one/', 'Mixin-Blaze-1', self, {});
+    self.ws = new wsreconnect(self.ws_domain || 'wss://blaze.mixin.one/', 'Mixin-Blaze-1', self, {});
     self.ws.on("error", (event) => {
       if (self.onError) {
         self.onError(event);
