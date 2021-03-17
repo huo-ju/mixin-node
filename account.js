@@ -17,6 +17,8 @@ let ACCOUNT = function(opts) {
   self.client_id = opts.client_id;
   self.session_id = opts.session_id;
   self.timeout = opts.timeout || 3600;
+  self.api_domain = opts.api_domain || 'https://api.mixin.one';
+  self.ws_domain = opts.ws_domain || 'wss://blaze.mixin.one/';
   if (opts.client_secret)
     self.client_secret = opts.client_secret;
   if (opts.share_secret)
@@ -72,7 +74,7 @@ let ACCOUNT = function(opts) {
       };
       let token = jwt.sign(payload, privatekey, { algorithm: 'RS512' });
       let options = {
-        url: 'https://api.mixin.one/pin/update',
+        url: `${self.api_domain}/pin/update`,
         method: "POST",
         body: pin_json_str,
         headers: {
@@ -117,7 +119,7 @@ let ACCOUNT = function(opts) {
       };
       let token = jwt.sign(payload, privatekey, { algorithm: 'RS512' });
       let options = {
-        url: 'https://api.mixin.one/me',
+        url: `${self.api_domain}/me`,
         method: "POST",
         body: profile_json_str,
         headers: {
@@ -145,10 +147,10 @@ let ACCOUNT = function(opts) {
       const seconds = Math.floor(Date.now() / 1000);
       const seconds_exp = Math.floor(Date.now() / 1000) + self.timeout;
       let transfer_sig_str = 'GET/assets';
-      let url = 'https://api.mixin.one/assets';
+      let url = `${self.api_domain}/assets`;
       if (asset_id && asset_id.length === 36) {
         transfer_sig_str = 'GET/assets/' + asset_id;
-        url = 'https://api.mixin.one/assets/' + asset_id;
+        url = `${self.api_domain}/assets/` + asset_id;
       }
       let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest('hex');
       let payload = {
@@ -217,7 +219,7 @@ let ACCOUNT = function(opts) {
         payload, useroptions.privateKey, { algorithm: 'RS512' }
       );
       let options = {
-        url: 'https://api.mixin.one/transfers',
+        url: `${self.api_domain}/transfers`,
         method: 'POST',
         body: transfer_json_str,
         headers: {
@@ -291,7 +293,7 @@ let ACCOUNT = function(opts) {
         };
         let token = jwt.sign(payload, self.privatekey, { algorithm: 'RS512' });
         let options = {
-          url: 'https://api.mixin.one/users',
+          url: `${self.api_domain}/users`,
           method: "Post",
           body: createuser_json_str,
           headers: {
