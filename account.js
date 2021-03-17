@@ -27,7 +27,7 @@ let ACCOUNT = function(opts) {
     self.privatekey = opts.privatekey;
   }
 
-  self.updatePin = (oldpin, newpin, aeskeybase64, useroptions) => {
+  self.updatePin = (oldpin, newpin, aeskeybase64, useroptions, extraOptions = {}) => {
     return new Promise((resolve, reject) => {
 
       const seconds = Math.floor(Date.now() / 1000);
@@ -70,7 +70,7 @@ let ACCOUNT = function(opts) {
       };
       let token = jwt.sign(payload, privatekey,{ algorithm: 'RS512'});
       let options ={
-        url:'https://api.mixin.one/pin/update',
+        url:`${extraOptions.apiDomain || 'https://api.mixin.one'}/pin/update`,
         method:"POST",
         body: pin_json_str,
         headers: {
@@ -84,7 +84,7 @@ let ACCOUNT = function(opts) {
     });
   };
 
-  self.updateProfile = (profile, useroptions) => {
+  self.updateProfile = (profile, useroptions, extraOptions = {}) => {
     return new Promise((resolve, reject) => {
       const seconds = Math.floor(Date.now() / 1000);
       const seconds_exp = Math.floor(Date.now() / 1000) + self.timeout;
@@ -115,7 +115,7 @@ let ACCOUNT = function(opts) {
       };
       let token = jwt.sign(payload, privatekey,{ algorithm: 'RS512'});
       let options ={
-        url:'https://api.mixin.one/me',
+        url:`${extraOptions.apiDomain || 'https://api.mixin.one'}/me`,
         method:"POST",
         body: profile_json_str,
         headers: {
@@ -137,16 +137,16 @@ let ACCOUNT = function(opts) {
     });
   };
 
-  self.readAssets = (asset_id, useroptions) => {
+  self.readAssets = (asset_id, useroptions, extraOptions = {}) => {
     // console.log(useroptions);
     return new Promise((resolve, reject) => {
       const seconds        = Math.floor(Date.now() / 1000);
       const seconds_exp    = Math.floor(Date.now() / 1000) + self.timeout;
       let transfer_sig_str = 'GET/assets';
-      let url = 'https://api.mixin.one/assets';
+      let url = `${extraOptions.apiDomain || 'https://api.mixin.one'}/assets`;
       if (asset_id && asset_id.length === 36) {
         transfer_sig_str = 'GET/assets/' + asset_id;
-        url = 'https://api.mixin.one/assets/' + asset_id;
+        url = `${extraOptions.apiDomain || 'https://api.mixin.one'}/assets/` + asset_id;
       }
       let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest('hex');
       let payload = {
@@ -174,7 +174,7 @@ let ACCOUNT = function(opts) {
     });
   };
 
-  self.transfer = (asset_id, recipient_id, amount, memo, useroptions, trace_id) => {
+  self.transfer = (asset_id, recipient_id, amount, memo, useroptions, trace_id, extraOptions = {}) => {
     // console.log(useroptions);
     return new Promise((resolve, reject) => {
       const seconds     = Math.floor(Date.now() / 1000);
@@ -215,7 +215,7 @@ let ACCOUNT = function(opts) {
         payload, useroptions.privateKey, {algorithm : 'RS512'}
       );
       let options = {
-        url     : 'https://api.mixin.one/transfers',
+        url     : `${extraOptions.apiDomain || 'https://api.mixin.one'}/transfers`,
         method  : 'POST',
         body    : transfer_json_str,
         headers : {
@@ -254,7 +254,7 @@ let ACCOUNT = function(opts) {
     return encrypted_pin;
   }
 
-  self.createUser = (username) =>{
+  self.createUser = (username, extraOptions = {}) =>{
     return new Promise((resolve, reject) => {
 
     const rsa = forge.pki.rsa;
@@ -290,7 +290,7 @@ let ACCOUNT = function(opts) {
       };
       let token = jwt.sign(payload, self.privatekey,{ algorithm: 'RS512'});
       let options ={
-        url:'https://api.mixin.one/users',
+        url:`${extraOptions.apiDomain || 'https://api.mixin.one'}/users`,
         method:"Post",
         body: createuser_json_str,
         headers: {
@@ -337,24 +337,24 @@ ACCOUNT.encryptCustomPIN = function(pincode, aeskeybase64) {
   return self.encryptCustomPIN(pincode, aeskeybase64);
 }
 
-ACCOUNT.prototype.createUser = function(username) {
-  return this.createUser(username);
+ACCOUNT.prototype.createUser = function(username, extraOptions = {}) {
+  return this.createUser(username, extraOptions);
 }
 
-ACCOUNT.prototype.readAssets = function(asset_id, aeskeybase64, useroptions) {
-  return this.readAssets(asset_id, aeskeybase64, useroptions);
+ACCOUNT.prototype.readAssets = function(asset_id, useroptions, extraOptions = {}) {
+  return this.readAssets(asset_id, useroptions, extraOptions);
 }
 
 ACCOUNT.prototype.decryptRSAOAEP = function(privateKey, message, label) {
   return this.decryptRSAOAEP(privateKey, message, label);
 }
 
-ACCOUNT.prototype.updatePin = function(oldpin, newpin, aeskeybase64, options) {
-  return this.updatePin(oldpin, newpin, aeskeybase64, options);
+ACCOUNT.prototype.updatePin = function(oldpin, newpin, aeskeybase64, options, extraOptions = {}) {
+  return this.updatePin(oldpin, newpin, aeskeybase64, options, extraOptions);
 }
 
-ACCOUNT.prototype.updateProfile = function(profile, options) {
-  return this.updateProfile(profile, options);
+ACCOUNT.prototype.updateProfile = function(profile, options, extraOptions = {}) {
+  return this.updateProfile(profile, options, extraOptions);
 }
 
 module.exports = ACCOUNT;

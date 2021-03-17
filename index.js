@@ -43,7 +43,7 @@ let MIXINNODE = function(opts) {
   }
 
 
-  self.transferFromBot = (asset_id, recipient_id, amount, memo) => {
+  self.transferFromBot = (asset_id, recipient_id, amount, memo, extraOptions = {}) => {
     return new Promise((resolve, reject) => {
       const seconds = Math.floor(Date.now() / 1000);
       const seconds_exp = Math.floor(Date.now() / 1000) + self.timeout;
@@ -78,7 +78,7 @@ let MIXINNODE = function(opts) {
       let token = jwt.sign(payload, self.privatekey,{ algorithm: 'RS512'});
 
       let options ={
-        url:'https://api.mixin.one/transfers',
+        url:`${extraOptions.apiDomain || 'https://api.mixin.one'}/transfers`,
         method:"POST",
         body: transfer_json_str,
         headers: {
@@ -93,17 +93,17 @@ let MIXINNODE = function(opts) {
     });
   }
 
-  self.readAssets = (asset_id) =>{
+  self.readAssets = (asset_id, extraOptions = {}) =>{
     return new Promise((resolve, reject) => {
       const seconds = Math.floor(Date.now() / 1000);
       const seconds_exp = Math.floor(Date.now() / 1000) + self.timeout;
       // let encrypted_pin = self.encryptPIN();
       let transfer_sig_str = "GET/assets";
 
-      let url = 'https://api.mixin.one/assets';
+      let url = `${extraOptions.apiDomain || 'https://api.mixin.one'}/assets`;
       if ( asset_id && asset_id.length==36 ) {
         transfer_sig_str = "GET/assets/"+asset_id;
-        url = 'https://api.mixin.one/assets/'+asset_id;
+        url = `${extraOptions.apiDomain || 'https://api.mixin.one'}/assets/`+asset_id;
       }
       let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest("hex");
 
@@ -132,9 +132,9 @@ let MIXINNODE = function(opts) {
     });
   }
 
-  self.readProfile = (access_token) =>{
+  self.readProfile = (access_token, extraOptions = {}) =>{
     return new Promise((resolve, reject) => {
-      let url = 'https://api.mixin.one/me';
+      let url = `${extraOptions.apiDomain || 'https://api.mixin.one'}/me`;
       let token ="";
       if(!access_token){
         const seconds = Math.floor(Date.now() / 1000);
@@ -171,7 +171,7 @@ let MIXINNODE = function(opts) {
     });
   }
 
-  self.readNetworkSnapshots = (offset, asset, limit, order) => {
+  self.readNetworkSnapshots = (offset, asset, limit, order, extraOptions = {}) => {
     return new Promise((resolve, reject) => {
       let _order = "DESC";
       if(order)
@@ -180,7 +180,7 @@ let MIXINNODE = function(opts) {
       let path = `/network/snapshots?limit=${limit}&offset=${offset}&order=${_order}`;
       if(asset && asset != "")
         path = path + `&asset=${asset}`;
-      let url = "https://api.mixin.one"+path;
+      let url = (extraOptions.apiDomain || 'https://api.mixin.one')+path;
       let token = self.tokenGET(path,"");
       let options ={
         url: url,
@@ -198,7 +198,7 @@ let MIXINNODE = function(opts) {
 
 
 
-  self.requestAccessToken = (code) =>{
+  self.requestAccessToken = (code, extraOptions = {}) =>{
     return new Promise((resolve, reject) => {
       let auth_json = {
         client_id: self.client_id,
@@ -207,7 +207,7 @@ let MIXINNODE = function(opts) {
       };
       let auth_json_str = JSON.stringify(auth_json);
       let options ={
-        url:'https://api.mixin.one/oauth/token',
+        url:`${extraOptions.apiDomain || 'https://api.mixin.one'}/oauth/token`,
         method:"POST",
         body: auth_json_str,
         headers: {
@@ -343,8 +343,8 @@ let MIXINNODE = function(opts) {
     return options;
   }
 
-  self.startws = () =>{
-    self.ws = new wsreconnect('wss://blaze.mixin.one/', 'Mixin-Blaze-1',self, {});
+  self.startws = (extraOptions = {}) => {
+    self.ws = new wsreconnect(extraOptions.wsDomain || 'wss://blaze.mixin.one/', 'Mixin-Blaze-1',self, {});
     self.ws.on("error", (event) => {
       if(self.onError){
         self.onError(event);
@@ -380,16 +380,16 @@ let MIXINNODE = function(opts) {
   }
 }
 
-MIXINNODE.prototype.Assets= function(asset_id){
-  return this.readAssets(asset_id);
+MIXINNODE.prototype.Assets= function(asset_id, extraOptions = {}){
+  return this.readAssets(asset_id, extraOptions);
 }
 
-MIXINNODE.prototype.readProfile = function(access_token){
-  return this.readProfile (access_token);
+MIXINNODE.prototype.readProfile = function(access_token, extraOptions = {}){
+  return this.readProfile (access_token, extraOptions);
 }
 
-MIXINNODE.prototype.transferFromBot = function(){
-  return this.transferFromBot(asset_id, recipient_id, amount, memo);
+MIXINNODE.prototype.transferFromBot = function(extraOptions = {}){
+  return this.transferFromBot(asset_id, recipient_id, amount, memo, extraOptions);
 }
 MIXINNODE.prototype.authTokenGET = function(uri, body){
   return this.tokenGET(uri, body);
@@ -411,8 +411,8 @@ MIXINNODE.prototype.decode = function(data){
   });
 }
 
-MIXINNODE.prototype.start= function(){
-  return this.startws();
+MIXINNODE.prototype.start = function(extraOptions = {}) {
+  return this.startws(extraOptions);
 }
 
 MIXINNODE.prototype.getwsopts = function(){
@@ -452,12 +452,12 @@ MIXINNODE.prototype.sendMsg = function(action, opts){
   }
 }
 
-MIXINNODE.prototype.requestAccessToken= function(code){
-  return this.requestAccessToken(code);
+MIXINNODE.prototype.requestAccessToken= function(code, extraOptions = {}){
+  return this.requestAccessToken(code, extraOptions);
 }
 
-MIXINNODE.prototype.readSnapshots= function(offset, asset, limit, order){
-  return this.readNetworkSnapshots(offset, asset, limit, order);
+MIXINNODE.prototype.readSnapshots= function(offset, asset, limit, order, extraOptions = {}){
+  return this.readNetworkSnapshots(offset, asset, limit, order, extraOptions);
 }
 
 
@@ -471,7 +471,7 @@ MIXINNODE.prototype.signJWT= function(payload){
   return token;
 }
 
-MIXINNODE.prototype.startPullNetwork = function(timeinterval, opts, eventHandler){
+MIXINNODE.prototype.startPullNetwork = function(timeinterval, opts, eventHandler, extraOptions = {}){
   this.pullNetworkflag = true;
   interval(async (iteration, stop) => {
     if (this.pullNetworkflag == false) {
@@ -494,7 +494,7 @@ MIXINNODE.prototype.startPullNetwork = function(timeinterval, opts, eventHandler
 
       let results = await this.readNetworkSnapshots(
         rfc3339nano.adjustRfc3339ByNano(session.offset, 1),
-        opts.asset_id, opts.limit, opts.order
+        opts.asset_id, opts.limit, opts.order, extraOptions
       );
       results = results.data;
       for(let i in results){
