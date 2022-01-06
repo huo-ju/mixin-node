@@ -5,9 +5,13 @@ const crypto = require('crypto');
 const request = require('request');
 const fs = require('fs');
 const forge = require('node-forge');
-const rsa = forge.pki.rsa;
+const crypto_scalarmult = require('./ed25519')
 const jwt = require('jsonwebtoken');
 const requestHandler = require('./requestHandler');
+
+const rsa = forge.pki.rsa;
+const ed25519 = forge.pki.ed25519;
+const algorithm = { algorithm: 'RS512' };
 
 let ACCOUNT = function(opts) {
   let self = this;
@@ -29,6 +33,60 @@ let ACCOUNT = function(opts) {
     self.privatekey = cert;
   } else if (typeof opts.privatekey == "object") {
     self.privatekey = opts.privatekey;
+  }
+
+  self.toBuffer = (content, encoding = 'utf8') => {
+    if (typeof content === 'object') content = JSON.stringify(content)
+    return Buffer.from(content, encoding)
+  }
+
+  self.base64url = (buffer) => {
+    return buffer.toString('base64').replace(/\=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
+  }
+
+  self.getEd25519Sign = (payload, privateKey) => {
+    const header = self.toBuffer({ alg: 'EdDSA', typ: 'JWT' }).toString('base64')
+    payload = self.base64url(self.toBuffer(payload))
+    const result = [header, payload]
+    const sign = self.base64url(forge.pki.ed25519.sign({
+      message: result.join('.'), encoding: 'utf8', privateKey
+    }))
+    result.push(sign)
+    return result.join('.');
+  }
+
+  self.getToken = (payload, privateKey) => {
+    let _privateKey = self.toBuffer(privateKey, 'base64');
+    return _privateKey.length === 64
+      ? self.getEd25519Sign(payload, _privateKey)
+      : jwt.sign(payload, privateKey, algorithm);
+  };
+
+  self.scalarMult = (curvePriv, publicKey) => {
+    curvePriv[0] &= 248
+    curvePriv[31] &= 127
+    curvePriv[31] |= 64
+    var sharedKey = new Uint8Array(32);
+    crypto_scalarmult(sharedKey, curvePriv, publicKey);
+    return sharedKey;
+  }
+
+  self.privateKeyToCurve25519 = (privateKey) => {
+    const seed = privateKey.slice(0, 32)
+    const sha512 = crypto.createHash('sha512')
+    sha512.write(seed, 'binary')
+    let digest = sha512.digest()
+    digest[0] &= 248
+    digest[31] &= 127
+    digest[31] |= 64
+    return digest.slice(0, 32)
+  }
+
+  self.signEncryptEd25519PIN = (pinToken, privateKey) => {
+    pinToken = Buffer.from(pinToken, 'base64')
+    return Buffer.from(self.scalarMult(
+      self.privateKeyToCurve25519(privateKey), pinToken.slice(0, 32)
+    )).toString('base64');
   }
 
   self.updatePin = (oldpin, newpin, aeskeybase64, useroptions) => {
@@ -72,13 +130,12 @@ let ACCOUNT = function(opts) {
         jti: self.uuidv4(),
         sig: pin_sig_sha256
       };
-      let token = jwt.sign(payload, privatekey, { algorithm: 'RS512' });
       let options = {
         url: `${self.api_domain}/pin/update`,
         method: "POST",
         body: pin_json_str,
         headers: {
-          'Authorization': 'Bearer ' + token,
+          'Authorization': 'Bearer ' + self.getToken(payload, privatekey),
           'Content-Type': 'application/json'
         }
       }
@@ -117,13 +174,12 @@ let ACCOUNT = function(opts) {
         jti: self.uuidv4(),
         sig: profile_sig_sha256
       };
-      let token = jwt.sign(payload, privatekey, { algorithm: 'RS512' });
       let options = {
         url: `${self.api_domain}/me`,
         method: "POST",
         body: profile_json_str,
         headers: {
-          'Authorization': 'Bearer ' + token,
+          'Authorization': 'Bearer ' + self.getToken(payload, privatekey),
           'Content-Type': 'application/json'
         }
       }
@@ -161,14 +217,11 @@ let ACCOUNT = function(opts) {
         jti: self.uuidv4(),
         sig: transfer_sig_sha256,
       };
-      let token = jwt.sign(
-        payload, useroptions.privateKey, { algorithm: 'RS512' }
-      );
       let options = {
         url: url,
         method: 'GET',
         headers: {
-          'Authorization': 'Bearer ' + token,
+          'Authorization': 'Bearer ' + self.getToken(payload, useroptions.privateKey),
           'Content-Type': 'application/json',
         }
       }
@@ -215,15 +268,12 @@ let ACCOUNT = function(opts) {
         jti: self.uuidv4(),
         sig: transfer_sig_sha256,
       };
-      let token = jwt.sign(
-        payload, useroptions.privateKey, { algorithm: 'RS512' }
-      );
       let options = {
         url: `${self.api_domain}/transfers`,
         method: 'POST',
         body: transfer_json_str,
         headers: {
-          'Authorization': 'Bearer ' + token,
+          'Authorization': 'Bearer ' + self.getToken(payload, useroptions.privateKey),
           'Content-Type': 'application/json',
         },
       }
@@ -258,31 +308,48 @@ let ACCOUNT = function(opts) {
     return encrypted_pin;
   }
 
-  self.createUser = (username) => {
+  self.createUser = (username, keytype = 'RSA') => { // keep the RSA as default to avoid breaking compatibility
     return new Promise((resolve, reject) => {
-
-      rsa.generateKeyPair({ bits: 1024, workers: 2 }, function(err, keypair) {
-        let key = {
-          publickeypem: forge.pki.publicKeyToPem(keypair.privateKey),
-          privatekeypem: forge.pki.privateKeyToPem(keypair.privateKey)
-        };
-
-        let lines = key.publickeypem.trim().split("\n");
-        lines.splice(lines.length - 1, 1);
-        lines.splice(0, 1);
-        let resultline = lines.map(function(x) { return x.trim(); });
-        let pubkeystring = resultline.join('');
-
+      let generateKeyPair, key, pubkeystring;
+      switch ((keytype = String(keytype).toUpperCase())) {
+        case 'RSA':
+          generateKeyPair = rsa.generateKeyPair;
+          break;
+        case 'ED25519':
+          generateKeyPair = (_, cb) => { cb(null, ed25519.generateKeyPair()); };
+          break;
+        default:
+          reject('Invalid key type');
+      }
+      generateKeyPair({ bits: 1024, workers: 2 }, function(_, keypair) {
+        switch (keytype) {
+          case 'RSA':
+            key = {
+              publickey: forge.pki.publicKeyToPem(keypair.privateKey),
+              privatekey: forge.pki.privateKeyToPem(keypair.privateKey)
+            };
+            let lines = key.publickey.trim().split("\n");
+            lines.splice(lines.length - 1, 1);
+            lines.splice(0, 1);
+            let resultline = lines.map(function(x) { return x.trim(); });
+            pubkeystring = resultline.join('');
+            break;
+          case 'ED25519':
+            key = {
+              publickey: keypair.publicKey.toString('base64'),
+              privatekey: keypair.privateKey.toString('base64'),
+            };
+            pubkeystring = key.publickey;
+            break;
+        }
         let createuser_json = {};
         createuser_json["session_secret"] = pubkeystring;
         createuser_json["full_name"] = username;
         let createuser_json_str = JSON.stringify(createuser_json);
         let createuser_sig_str = "POST/users" + createuser_json_str;
         let createuser_sig_sha256 = crypto.createHash('sha256').update(createuser_sig_str).digest("hex");
-
         const seconds = Math.floor(Date.now() / 1000);
         const seconds_exp = Math.floor(Date.now() / 1000) + self.timeout;
-
         let payload = {
           uid: self.client_id, //bot account id
           sid: self.session_id,
@@ -291,23 +358,29 @@ let ACCOUNT = function(opts) {
           jti: self.uuidv4(),
           sig: createuser_sig_sha256
         };
-        let token = jwt.sign(payload, self.privatekey, { algorithm: 'RS512' });
         let options = {
           url: `${self.api_domain}/users`,
           method: "Post",
           body: createuser_json_str,
           headers: {
-            'Authorization': 'Bearer ' + token,
+            'Authorization': 'Bearer ' + self.getToken(payload, self.privatekey),
             'Content-Type': 'application/json'
           }
         }
         request(options, function(err, httpresponse, body) {
           requestHandler(err, body, () => {
             var result = {};
-            result.privatekey = key.privatekeypem;
-            result.publickey = key.publickeypem;
+            result.privatekey = key.privatekey;
+            result.publickey = key.publickey;
             result.data = JSON.parse(body).data;
-            result.data.aeskeybase64 = self.decryptRSAOAEP(key.privatekeypem, result.data.pin_token, result.data.session_id);
+            switch ((result.keytype = keytype)) {
+              case 'RSA':
+                result.data.aeskeybase64 = self.decryptRSAOAEP(key.privatekey, result.data.pin_token, result.data.session_id);
+                break;
+              case 'ED25519':
+                result.data.aeskeybase64 = self.signEncryptEd25519PIN(result.data.pin_token, keypair.privateKey);
+                break;
+            }
             resolve(result);
           }, reject);
         });
@@ -325,16 +398,20 @@ let ACCOUNT = function(opts) {
   self.decryptRSAOAEP = (privateKeyPem, message, label) => {
     let pki = forge.pki;
     let privateKey = pki.privateKeyFromPem(privateKeyPem);
-    let buf = new Buffer(message, 'base64');
+    let buf = Buffer.from(message, 'base64');
     let decrypted = privateKey.decrypt(buf, 'RSA-OAEP', {
       md: forge.md.sha256.create(),
       label: label
     });
-    let s = new Buffer(decrypted, 'binary').toString('base64');
+    let s = Buffer.from(decrypted, 'binary').toString('base64');
     return s;
   }
 
 }
+
+ACCOUNT.getToken = function(payload, privateKey) {
+  return self.getToken(payload, privateKey);
+};
 
 ACCOUNT.encryptCustomPIN = function(pincode, aeskeybase64) {
   return self.encryptCustomPIN(pincode, aeskeybase64);

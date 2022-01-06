@@ -2,7 +2,6 @@
 
 const request = require('request');
 const Uint64LE = require("int64-buffer").Uint64LE;
-const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const fs = require('fs');
 const zlib = require("zlib");
@@ -10,7 +9,6 @@ const wsreconnect = require('./ws-reconnect');
 const WebSocket = require('ws');
 const interval = require('interval-promise');
 const Account = require('./account');
-
 const requestHandler = require('./requestHandler');
 const rfc3339nano = require('rfc3339nano');
 
@@ -101,14 +99,13 @@ let MIXINNODE = function(opts) {
         jti: self.uuidv4(),
         sig: transfer_sig_sha256
       };
-      let token = jwt.sign(payload, self.privatekey, { algorithm: 'RS512' });
 
       let options = {
         url: `${self.api_domain}/transfers`,
         method: "POST",
         body: transfer_json_str,
         headers: {
-          'Authorization': 'Bearer ' + token,
+          'Authorization': 'Bearer ' + self.account.getToken(payload, self.privatekey),
           'Content-Type': 'application/json'
         }
       }
@@ -141,13 +138,12 @@ let MIXINNODE = function(opts) {
         jti: self.uuidv4(),
         sig: transfer_sig_sha256
       };
-      let token = jwt.sign(payload, self.privatekey, { algorithm: 'RS512' });
 
       let options = {
         url: url,
         method: "GET",
         headers: {
-          'Authorization': 'Bearer ' + token,
+          'Authorization': 'Bearer ' + self.account.getToken(payload, self.privatekey),
           'Content-Type': 'application/json'
         }
       }
@@ -177,7 +173,7 @@ let MIXINNODE = function(opts) {
           jti: self.uuidv4(),
           sig: transfer_sig_sha256
         };
-        token = jwt.sign(payload, self.privatekey, { algorithm: 'RS512' });
+        token = self.account.getToken(payload, self.privatekey);
       } else {
         token = access_token;
       }
@@ -339,8 +335,7 @@ let MIXINNODE = function(opts) {
       sig: transfer_sig_sha256
     };
     //console.log(payload);
-    let token = jwt.sign(payload, self.privatekey, { algorithm: 'RS512' });
-    return token;
+    return self.account.getToken(payload, self.privatekey);
   }
 
   self.tokenGET = (uri, body, opts) => {
@@ -436,13 +431,12 @@ let MIXINNODE = function(opts) {
             jti: self.uuidv4(),
             sig: message_sig_sha256
           };
-          let token = jwt.sign(payload, self.privatekey, { algorithm: 'RS512' });
           let options = {
             url: `${self.api_domain}/messages`,
             method: "POST",
             body: message_json_str,
             headers: {
-              'Authorization': 'Bearer ' + token,
+              'Authorization': 'Bearer ' + self.account.getToken(payload, self.privatekey),
               'Content-Type': 'application/json'
             }
           }
@@ -617,10 +611,8 @@ MIXINNODE.prototype.getViewToken = function(uri, opts) {
   return this.tokenGET(uri, "", opts);
 }
 
-
 MIXINNODE.prototype.signJWT = function(payload) {
-  let token = jwt.sign(payload, this.share_secret);
-  return token;
+  return self.account.getToken(payload, this.share_secret);
 }
 
 MIXINNODE.prototype.startPullNetwork = function(timeinterval, opts, eventHandler) {
