@@ -1,18 +1,16 @@
-'use strict';
+import { adjustRfc3339ByNano } from 'rfc3339nano';
+import { Uint64LE } from 'int64-buffer';
+import Account from './account.mjs';
+import crypto from 'crypto';
+import fs from 'fs';
+import interval from 'interval-promise';
+import request from 'request';
+import requestHandler from './requestHandler.mjs';
+import WebSocket from 'ws';
+import wsreconnect from './ws-reconnect.mjs';
+import zlib from "zlib";
 
-const request = require('request');
-const Uint64LE = require("int64-buffer").Uint64LE;
-const crypto = require('crypto');
-const fs = require('fs');
-const zlib = require("zlib");
-const wsreconnect = require('./ws-reconnect');
-const WebSocket = require('ws');
-const interval = require('interval-promise');
-const Account = require('./account');
-const requestHandler = require('./requestHandler');
-const rfc3339nano = require('rfc3339nano');
-
-let MIXINNODE = function(opts) {
+const MIXINNODE = function(opts) {
   let self = this;
   self.pullNetworkflag = false;
   opts = opts || {};
@@ -621,7 +619,6 @@ MIXINNODE.prototype.startPullNetwork = function(timeinterval, opts, eventHandler
     if (this.pullNetworkflag == false) {
       stop()
     } else {
-
       let session = {};
       try {
         session = JSON.parse(fs.readFileSync('session.json', 'utf8'));
@@ -635,10 +632,9 @@ MIXINNODE.prototype.startPullNetwork = function(timeinterval, opts, eventHandler
           fs.writeFileSync('session.json', json, 'utf8');
         }
       }
-
       try {
         let results = await this.readNetworkSnapshots(
-          rfc3339nano.adjustRfc3339ByNano(session.offset, 1),
+          adjustRfc3339ByNano(session.offset, 1),
           opts.asset_id, opts.limit, opts.order
         );
         results = results.data;
@@ -647,16 +643,13 @@ MIXINNODE.prototype.startPullNetwork = function(timeinterval, opts, eventHandler
           if (results[i].user_id) {
             eventHandler(results[i]);
           }
-
           let json = JSON.stringify(session);
           fs.writeFileSync('session.json', json, 'utf8');
         }
       } catch (err) {
         console.log(err);
       }
-
     }
-
   }, timeinterval);
 }
 
@@ -664,4 +657,4 @@ MIXINNODE.prototype.stopPullNetwork = function() {
   this.pullNetworkflag = false;
 }
 
-module.exports = MIXINNODE;
+export default MIXINNODE;

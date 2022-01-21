@@ -1,19 +1,17 @@
-'use strict';
-
-const Uint64LE = require("int64-buffer").Uint64LE;
-const crypto = require('crypto');
-const request = require('request');
-const fs = require('fs');
-const forge = require('node-forge');
-const crypto_scalarmult = require('./ed25519')
-const jwt = require('jsonwebtoken');
-const requestHandler = require('./requestHandler');
+import { Uint64LE } from 'int64-buffer';
+import crypto from 'crypto';
+import crypto_scalarmult from './ed25519.mjs'
+import forge from 'node-forge';
+import fs from 'fs';
+import jwt from 'jsonwebtoken';
+import request from 'request';
+import requestHandler from './requestHandler.mjs';
 
 const rsa = forge.pki.rsa;
 const ed25519 = forge.pki.ed25519;
 const algorithm = { algorithm: 'RS512' };
 
-let ACCOUNT = function(opts) {
+const ACCOUNT = function(opts) {
   let self = this;
   opts = opts || {};
   self.pin = opts.pin;
@@ -437,4 +435,4 @@ ACCOUNT.prototype.updateProfile = function(profile, options) {
   return this.updateProfile(profile, options);
 }
 
-module.exports = ACCOUNT;
+export default ACCOUNT;

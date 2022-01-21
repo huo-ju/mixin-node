@@ -1,4 +1,4 @@
-module.exports = function crypto_scalarmult(q, n, p) {
+export default function crypto_scalarmult(q, n, p) {
   var z = new Uint8Array(32);
   var x = new Float64Array(80), r, i;
   var a = gf(), b = gf(), c = gf(), d = gf(), e = gf(), f = gf();
