@@ -1,12 +1,13 @@
-import { Uint64LE } from 'int64-buffer';
 import crypto from 'crypto';
 import crypto_scalarmult from './ed25519.mjs'
 import forge from 'node-forge';
 import fs from 'fs';
+import int64Buffer from 'int64-buffer';
 import jwt from 'jsonwebtoken';
 import request from 'request';
 import requestHandler from './requestHandler.mjs';
 
+const { Uint64LE } = int64Buffer;
 const rsa = forge.pki.rsa;
 const ed25519 = forge.pki.ed25519;
 const algorithm = { algorithm: 'RS512' };

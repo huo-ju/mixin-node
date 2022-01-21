@@ -1,14 +1,16 @@
 import { adjustRfc3339ByNano } from 'rfc3339nano';
-import { Uint64LE } from 'int64-buffer';
 import Account from './account.mjs';
 import crypto from 'crypto';
 import fs from 'fs';
+import int64Buffer from 'int64-buffer';
 import interval from 'interval-promise';
 import request from 'request';
 import requestHandler from './requestHandler.mjs';
 import WebSocket from 'ws';
 import wsreconnect from './ws-reconnect.mjs';
 import zlib from "zlib";
+
+const { Uint64LE } = int64Buffer;
 
 const MIXINNODE = function(opts) {
   let self = this;
