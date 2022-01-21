@@ -1,7 +1,7 @@
-import * as mixinjs from '../index.mjs';
-import config from "./config.mjs";
+import config from './config.mjs';
 import fs from 'fs';
 import Koa from 'koa';
+import mixinjs from '../index.mjs';
 
 const app = new Koa();
 const opts = config.mixin;

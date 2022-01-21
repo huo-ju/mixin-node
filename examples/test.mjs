@@ -1,5 +1,5 @@
-import * as  mixinjs from '../index.mjs';
 import config from './config.mjs';
+import mixinjs from '../index.mjs';
 
 // import fs from 'fs';
 // const cert = fs.readFileSync(config.mixin.privatekey);
