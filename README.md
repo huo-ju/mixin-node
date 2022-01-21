@@ -121,5 +121,5 @@ let recipient_id = "*************-4152-9c5a-839d286f7e4f"; //User Account ID
 let amount = "100";
 let memo ="test transfer"
 
-mixin.transferFromBot(asset_id, recipient_id, amount, memo).then( (result) =>{console.log(result);}).catch( (err) => {console.log(err);});
+mixin.transferFromBot(asset_id, recipient_id, amount, memo).then(console.log).catch(console.error);
 ```
