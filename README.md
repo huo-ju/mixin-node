@@ -107,7 +107,7 @@ npm install mixin-node --save
 ```
 
 ```javascript
-impor * as mixinjs from 'mixin-node';
+import * as mixinjs from 'mixin-node';
 let opts = {
     client_id         : "**********095-4960-8dd1-edf6e583a2a9",
     aeskey            : "*****DEN7P3k172oBLW3g/TUZa6Xa5MrgOOzKfXdv5A=",
