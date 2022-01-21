@@ -30,5 +30,8 @@
     "request": "^2.85.0",
     "rfc3339nano": "^2.0.2",
     "ws": "^8.4.2"
+  },
+  "devDependencies": {
+    "koa": "^2.13.4"
   }
 }
