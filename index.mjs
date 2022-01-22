@@ -1,18 +1,17 @@
-'use strict';
+import { adjustRfc3339ByNano } from 'rfc3339nano';
+import Account from './account.mjs';
+import crypto from 'crypto';
+import fs from 'fs';
+import int64Buffer from 'int64-buffer';
+import interval from 'interval-promise';
+import request from './request.mjs';
+import WebSocket from 'ws';
+import wsreconnect from './ws-reconnect.mjs';
+import zlib from "zlib";
 
-const request = require('request');
-const Uint64LE = require("int64-buffer").Uint64LE;
-const crypto = require('crypto');
-const fs = require('fs');
-const zlib = require("zlib");
-const wsreconnect = require('./ws-reconnect');
-const WebSocket = require('ws');
-const interval = require('interval-promise');
-const Account = require('./account');
-const requestHandler = require('./requestHandler');
-const rfc3339nano = require('rfc3339nano');
+const { Uint64LE } = int64Buffer;
 
-let MIXINNODE = function(opts) {
+const MIXINNODE = function(opts) {
   let self = this;
   self.pullNetworkflag = false;
   opts = opts || {};
@@ -109,10 +108,7 @@ let MIXINNODE = function(opts) {
           'Content-Type': 'application/json'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      })
-
+      request(options, resolve, reject);
     });
   }
 
@@ -147,10 +143,7 @@ let MIXINNODE = function(opts) {
           'Content-Type': 'application/json'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      })
-
+      request(options, resolve, reject);
     });
   }
 
@@ -164,7 +157,6 @@ let MIXINNODE = function(opts) {
         let encrypted_pin = self.encryptPIN();
         let transfer_sig_str = "GET/me";
         let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest("hex");
-
         let payload = {
           uid: self.client_id, //bot account id
           sid: self.session_id,
@@ -177,7 +169,6 @@ let MIXINNODE = function(opts) {
       } else {
         token = access_token;
       }
-
       let options = {
         url: url,
         method: "GET",
@@ -186,22 +177,16 @@ let MIXINNODE = function(opts) {
           'Content-Type': 'application/json'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      });
-
+      request(options, resolve, reject);
     });
   }
 
   self.readNetworkSnapshots = (offset, asset, limit, order) => {
     return new Promise((resolve, reject) => {
       let _order = "DESC";
-      if (order)
-        _order = order;
-
+      if (order) { _order = order };
       let path = `/network/snapshots?limit=${limit}&offset=${offset}&order=${_order}`;
-      if (asset && asset != "")
-        path = path + `&asset=${asset}`;
+      if (asset && asset != "") { path = path + `&asset=${asset}`; }
       let url = self.api_domain + path;
       let token = self.tokenGET(path, "");
       let options = {
@@ -212,9 +197,7 @@ let MIXINNODE = function(opts) {
           'Content-Type': '0'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      });
+      request(options, resolve, reject);
     });
   };
 
@@ -231,9 +214,7 @@ let MIXINNODE = function(opts) {
           'Content-Type': '0'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      });
+      request(options, resolve, reject);
     });
   };
 
@@ -250,9 +231,7 @@ let MIXINNODE = function(opts) {
           'Content-Type': '0'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      });
+      request(options, resolve, reject);
     });
   };
 
@@ -272,9 +251,7 @@ let MIXINNODE = function(opts) {
           'Content-Type': 'application/json'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      })
+      request(options, resolve, reject);
     });
   }
 
@@ -291,9 +268,7 @@ let MIXINNODE = function(opts) {
           'Content-Type': '0'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      });
+      request(options, resolve, reject);
     });
   };
 
@@ -310,9 +285,7 @@ let MIXINNODE = function(opts) {
           'Content-Type': '0'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      });
+      request(options, resolve, reject);
     });
   };
 
@@ -440,9 +413,7 @@ let MIXINNODE = function(opts) {
               'Content-Type': 'application/json'
             }
           }
-          return request(options, function(err, httpResponse, body) {
-            requestHandler(err, body, resolve, reject);
-          })
+          return request(options, resolve, reject);
         }
 
         self.ws_send(message).then(function() {
@@ -621,7 +592,6 @@ MIXINNODE.prototype.startPullNetwork = function(timeinterval, opts, eventHandler
     if (this.pullNetworkflag == false) {
       stop()
     } else {
-
       let session = {};
       try {
         session = JSON.parse(fs.readFileSync('session.json', 'utf8'));
@@ -635,10 +605,9 @@ MIXINNODE.prototype.startPullNetwork = function(timeinterval, opts, eventHandler
           fs.writeFileSync('session.json', json, 'utf8');
         }
       }
-
       try {
         let results = await this.readNetworkSnapshots(
-          rfc3339nano.adjustRfc3339ByNano(session.offset, 1),
+          adjustRfc3339ByNano(session.offset, 1),
           opts.asset_id, opts.limit, opts.order
         );
         results = results.data;
@@ -647,16 +616,13 @@ MIXINNODE.prototype.startPullNetwork = function(timeinterval, opts, eventHandler
           if (results[i].user_id) {
             eventHandler(results[i]);
           }
-
           let json = JSON.stringify(session);
           fs.writeFileSync('session.json', json, 'utf8');
         }
       } catch (err) {
         console.log(err);
       }
-
     }
-
   }, timeinterval);
 }
 
@@ -664,4 +630,4 @@ MIXINNODE.prototype.stopPullNetwork = function() {
   this.pullNetworkflag = false;
 }
 
-module.exports = MIXINNODE;
+export default MIXINNODE;

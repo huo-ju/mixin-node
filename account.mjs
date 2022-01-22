@@ -1,19 +1,17 @@
-'use strict';
+import crypto from 'crypto';
+import crypto_scalarmult from './ed25519.mjs'
+import forge from 'node-forge';
+import fs from 'fs';
+import int64Buffer from 'int64-buffer';
+import jwt from 'jsonwebtoken';
+import request from './request.mjs';
 
-const Uint64LE = require("int64-buffer").Uint64LE;
-const crypto = require('crypto');
-const request = require('request');
-const fs = require('fs');
-const forge = require('node-forge');
-const crypto_scalarmult = require('./ed25519')
-const jwt = require('jsonwebtoken');
-const requestHandler = require('./requestHandler');
-
+const { Uint64LE } = int64Buffer;
 const rsa = forge.pki.rsa;
 const ed25519 = forge.pki.ed25519;
 const algorithm = { algorithm: 'RS512' };
 
-let ACCOUNT = function(opts) {
+const ACCOUNT = function(opts) {
   let self = this;
   opts = opts || {};
   self.pin = opts.pin;
@@ -139,9 +137,7 @@ let ACCOUNT = function(opts) {
           'Content-Type': 'application/json'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      })
+      request(options, resolve, reject);
     });
   };
 
@@ -225,9 +221,7 @@ let ACCOUNT = function(opts) {
           'Content-Type': 'application/json',
         }
       }
-      request(options, (err, httpResponse, body) => {
-        requestHandler(err, body, resolve, reject);
-      })
+      request(options, resolve, reject);
     });
   };
 
@@ -277,9 +271,7 @@ let ACCOUNT = function(opts) {
           'Content-Type': 'application/json',
         },
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      })
+      request(options, resolve, reject);
     });
   };
 
@@ -367,23 +359,19 @@ let ACCOUNT = function(opts) {
             'Content-Type': 'application/json'
           }
         }
-        request(options, function(err, httpresponse, body) {
-          requestHandler(err, body, () => {
-            var result = {};
-            result.privatekey = key.privatekey;
-            result.publickey = key.publickey;
-            result.data = JSON.parse(body).data;
-            switch ((result.keytype = keytype)) {
-              case 'RSA':
-                result.data.aeskeybase64 = self.decryptRSAOAEP(key.privatekey, result.data.pin_token, result.data.session_id);
-                break;
-              case 'ED25519':
-                result.data.aeskeybase64 = self.signEncryptEd25519PIN(result.data.pin_token, keypair.privateKey);
-                break;
-            }
-            resolve(result);
-          }, reject);
-        });
+        request(options, (result) => {
+          result.privatekey = key.privatekey;
+          result.publickey = key.publickey;
+          switch ((result.keytype = keytype)) {
+            case 'RSA':
+              result.data.aeskeybase64 = self.decryptRSAOAEP(key.privatekey, result.data.pin_token, result.data.session_id);
+              break;
+            case 'ED25519':
+              result.data.aeskeybase64 = self.signEncryptEd25519PIN(result.data.pin_token, keypair.privateKey);
+              break;
+          }
+          resolve(result);
+        }, reject);
       });
     });
   }
@@ -437,4 +425,4 @@ ACCOUNT.prototype.updateProfile = function(profile, options) {
   return this.updateProfile(profile, options);
 }
 
-module.exports = ACCOUNT;
+export default ACCOUNT;

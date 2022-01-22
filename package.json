@@ -1,8 +1,12 @@
 {
   "name": "mixin-node",
-  "description": "The nodejs SDK for mixin.one",
-  "version": "1.0.35",
-  "main": "index.js",
+  "description": "The Node.js SDK for mixin.one",
+  "version": "2.0.0",
+  "main": "index.mjs",
+  "type": "module",
+  "engines": {
+    "node": ">=14.x"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/virushuo/mixin-node"
@@ -19,12 +23,15 @@
   },
   "homepage": "https://github.com/virushuo/mixin-node",
   "dependencies": {
-    "int64-buffer": "^0.1.10",
-    "interval-promise": "^1.2.0",
-    "jsonwebtoken": "^8.2.1",
-    "node-forge": "^0.10.0",
-    "request": "^2.85.0",
-    "rfc3339nano": "^1.0.2",
-    "ws": "^5.1.1"
+    "int64-buffer": "^1.0.1",
+    "interval-promise": "^1.4.0",
+    "jsonwebtoken": "^8.5.1",
+    "node-fetch": "^2.6.7",
+    "node-forge": "^1.2.1",
+    "rfc3339nano": "^2.0.2",
+    "ws": "^8.4.2"
+  },
+  "devDependencies": {
+    "koa": "^2.13.4"
   }
 }
