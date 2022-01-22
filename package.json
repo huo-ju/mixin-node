@@ -26,8 +26,8 @@
     "int64-buffer": "^1.0.1",
     "interval-promise": "^1.4.0",
     "jsonwebtoken": "^8.5.1",
+    "node-fetch": "^2.6.7",
     "node-forge": "^1.2.1",
-    "request": "^2.85.0",
     "rfc3339nano": "^2.0.2",
     "ws": "^8.4.2"
   },

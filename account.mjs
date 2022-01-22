@@ -4,8 +4,7 @@ import forge from 'node-forge';
 import fs from 'fs';
 import int64Buffer from 'int64-buffer';
 import jwt from 'jsonwebtoken';
-import request from 'request';
-import requestHandler from './requestHandler.mjs';
+import request from './request.mjs';
 
 const { Uint64LE } = int64Buffer;
 const rsa = forge.pki.rsa;
@@ -138,9 +137,7 @@ const ACCOUNT = function(opts) {
           'Content-Type': 'application/json'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      })
+      request(options, resolve, reject);
     });
   };
 
@@ -224,9 +221,7 @@ const ACCOUNT = function(opts) {
           'Content-Type': 'application/json',
         }
       }
-      request(options, (err, httpResponse, body) => {
-        requestHandler(err, body, resolve, reject);
-      })
+      request(options, resolve, reject);
     });
   };
 
@@ -276,9 +271,7 @@ const ACCOUNT = function(opts) {
           'Content-Type': 'application/json',
         },
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      })
+      request(options, resolve, reject);
     });
   };
 
@@ -366,23 +359,19 @@ const ACCOUNT = function(opts) {
             'Content-Type': 'application/json'
           }
         }
-        request(options, function(err, httpresponse, body) {
-          requestHandler(err, body, () => {
-            var result = {};
-            result.privatekey = key.privatekey;
-            result.publickey = key.publickey;
-            result.data = JSON.parse(body).data;
-            switch ((result.keytype = keytype)) {
-              case 'RSA':
-                result.data.aeskeybase64 = self.decryptRSAOAEP(key.privatekey, result.data.pin_token, result.data.session_id);
-                break;
-              case 'ED25519':
-                result.data.aeskeybase64 = self.signEncryptEd25519PIN(result.data.pin_token, keypair.privateKey);
-                break;
-            }
-            resolve(result);
-          }, reject);
-        });
+        request(options, (result) => {
+          result.privatekey = key.privatekey;
+          result.publickey = key.publickey;
+          switch ((result.keytype = keytype)) {
+            case 'RSA':
+              result.data.aeskeybase64 = self.decryptRSAOAEP(key.privatekey, result.data.pin_token, result.data.session_id);
+              break;
+            case 'ED25519':
+              result.data.aeskeybase64 = self.signEncryptEd25519PIN(result.data.pin_token, keypair.privateKey);
+              break;
+          }
+          resolve(result);
+        }, reject);
       });
     });
   }

@@ -4,8 +4,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import int64Buffer from 'int64-buffer';
 import interval from 'interval-promise';
-import request from 'request';
-import requestHandler from './requestHandler.mjs';
+import request from './request.mjs';
 import WebSocket from 'ws';
 import wsreconnect from './ws-reconnect.mjs';
 import zlib from "zlib";
@@ -109,10 +108,7 @@ const MIXINNODE = function(opts) {
           'Content-Type': 'application/json'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      })
-
+      request(options, resolve, reject);
     });
   }
 
@@ -147,10 +143,7 @@ const MIXINNODE = function(opts) {
           'Content-Type': 'application/json'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      })
-
+      request(options, resolve, reject);
     });
   }
 
@@ -164,7 +157,6 @@ const MIXINNODE = function(opts) {
         let encrypted_pin = self.encryptPIN();
         let transfer_sig_str = "GET/me";
         let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest("hex");
-
         let payload = {
           uid: self.client_id, //bot account id
           sid: self.session_id,
@@ -177,7 +169,6 @@ const MIXINNODE = function(opts) {
       } else {
         token = access_token;
       }
-
       let options = {
         url: url,
         method: "GET",
@@ -186,22 +177,16 @@ const MIXINNODE = function(opts) {
           'Content-Type': 'application/json'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      });
-
+      request(options, resolve, reject);
     });
   }
 
   self.readNetworkSnapshots = (offset, asset, limit, order) => {
     return new Promise((resolve, reject) => {
       let _order = "DESC";
-      if (order)
-        _order = order;
-
+      if (order) { _order = order };
       let path = `/network/snapshots?limit=${limit}&offset=${offset}&order=${_order}`;
-      if (asset && asset != "")
-        path = path + `&asset=${asset}`;
+      if (asset && asset != "") { path = path + `&asset=${asset}`; }
       let url = self.api_domain + path;
       let token = self.tokenGET(path, "");
       let options = {
@@ -212,9 +197,7 @@ const MIXINNODE = function(opts) {
           'Content-Type': '0'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      });
+      request(options, resolve, reject);
     });
   };
 
@@ -231,9 +214,7 @@ const MIXINNODE = function(opts) {
           'Content-Type': '0'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      });
+      request(options, resolve, reject);
     });
   };
 
@@ -250,9 +231,7 @@ const MIXINNODE = function(opts) {
           'Content-Type': '0'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      });
+      request(options, resolve, reject);
     });
   };
 
@@ -272,9 +251,7 @@ const MIXINNODE = function(opts) {
           'Content-Type': 'application/json'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      })
+      request(options, resolve, reject);
     });
   }
 
@@ -291,9 +268,7 @@ const MIXINNODE = function(opts) {
           'Content-Type': '0'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      });
+      request(options, resolve, reject);
     });
   };
 
@@ -310,9 +285,7 @@ const MIXINNODE = function(opts) {
           'Content-Type': '0'
         }
       }
-      request(options, function(err, httpResponse, body) {
-        requestHandler(err, body, resolve, reject);
-      });
+      request(options, resolve, reject);
     });
   };
 
@@ -440,9 +413,7 @@ const MIXINNODE = function(opts) {
               'Content-Type': 'application/json'
             }
           }
-          return request(options, function(err, httpResponse, body) {
-            requestHandler(err, body, resolve, reject);
-          })
+          return request(options, resolve, reject);
         }
 
         self.ws_send(message).then(function() {
