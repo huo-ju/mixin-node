@@ -325,7 +325,7 @@ const MIXINNODE = function(opts) {
   self.ws_send = (message) => {
     return new Promise((resolve, reject) => {
       try {
-        let buf = new Buffer(JSON.stringify(message), 'utf-8');
+        let buf = Buffer.from(JSON.stringify(message), 'utf-8');
         zlib.gzip(buf, function(_, zippedmsg) {
           if (self.ws.socket.readyState == WebSocket.OPEN) {
             self.ws.send(zippedmsg);
@@ -517,7 +517,7 @@ MIXINNODE.prototype.getwsopts = function() {
 MIXINNODE.prototype.sendText = function(text, msgobj, options) {
   let opts = {};
   opts.category = "PLAIN_TEXT";
-  opts.data = new Buffer(text).toString('base64');
+  opts.data = Buffer.from(text).toString('base64');
   return this.send_CREATE_MESSAGE(opts, msgobj, options);
 }
 
@@ -531,14 +531,14 @@ MIXINNODE.prototype.sendImage = function(base64data, msgobj, options) {
 MIXINNODE.prototype.sendButton = function(text, msgobj, options) {
   let opts = {};
   opts.category = "APP_BUTTON_GROUP";
-  opts.data = new Buffer(text).toString('base64');
+  opts.data = Buffer.from(text).toString('base64');
   return this.send_CREATE_MESSAGE(opts, msgobj, options);
 }
 
 MIXINNODE.prototype.sendCard = function(text, msgobj, options) {
   let opts = {};
   opts.category = "APP_CARD";
-  opts.data = new Buffer(text).toString('base64');
+  opts.data = Buffer.from(text).toString('base64');
   return this.send_CREATE_MESSAGE(opts, msgobj, options);
 }
 
@@ -548,9 +548,8 @@ MIXINNODE.prototype.sendMsg = function(action, opts) {
       return this.send_ACKNOWLEDGE_MESSAGE_RECEIPT(opts.message_id);
     case "LIST_PENDING_MESSAGES":
       return this.send_LIST_PENDING_MESSAGES();
-
     default:
-      return "";
+      return '';
   }
 }
 
