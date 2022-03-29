@@ -427,6 +427,32 @@ const MIXINNODE = function(opts) {
     });
   };
 
+  self.generateMultisigPayment = (data) => {
+    return new Promise((resolve, reject) => {
+      data = data || {};
+      data.trace_id = data.trace_id || self.uuidv4();
+      const payload_json_str = JSON.stringify(data);
+      const payload = {
+        uid: self.client_id,
+        sid: self.session_id,
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + self.timeout,
+        jti: self.uuidv4(),
+        sig: crypto.createHash('sha256').update('POST/payments' + payload_json_str).digest('hex'),
+      };
+      const options = {
+        url: `${self.api_domain}/payments`,
+        method: 'POST',
+        body: payload_json_str,
+        headers: {
+          'Authorization': 'Bearer ' + self.account.getToken(payload, self.privatekey),
+          'Content-Type': 'application/json'
+        }
+      }
+      request(options, resolve, reject);
+    });
+  };
+
   self.wsopts = () => {
     let token = self.tokenGET("/", "");
     let options = {
@@ -575,6 +601,10 @@ MIXINNODE.prototype.readTransfer = function(trace_id) {
 
 MIXINNODE.prototype.readSnapshot = function(snapshot_id, view_token) {
   return this.readNetworkSnapshot(snapshot_id, view_token);
+}
+
+MIXINNODE.prototype.generateMultisigPayment = function(payload) {
+  return this.generateMultisigPayment(payload);
 }
 
 MIXINNODE.prototype.getViewToken = function(uri, opts) {
