@@ -228,7 +228,7 @@ const ACCOUNT = function(opts) {
         amount = amount + '';
       }
       const aesKey = useroptions.aesKey || self.signEncryptEd25519PIN(
-        useroptions.pin_token, useroptions.privateKey
+        useroptions.pin_token, useroptions.privateKey || useroptions.private_key
       );
       let encrypted_pin = self.encryptCustomPIN(useroptions.pin, aesKey);
       let transfer_json = {
@@ -259,7 +259,7 @@ const ACCOUNT = function(opts) {
         method: 'POST',
         body: transfer_json_str,
         headers: {
-          'Authorization': 'Bearer ' + self.getToken(payload, useroptions.privateKey),
+          'Authorization': 'Bearer ' + self.getToken(payload, useroptions.privateKey || useroptions.private_key),
           'Content-Type': 'application/json',
         },
       }
@@ -298,7 +298,7 @@ const ACCOUNT = function(opts) {
       if (!memo) { memo = ''; }
       if (typeof amount === 'number') { amount = amount + ''; }
       const aesKey = useroptions.aesKey || self.signEncryptEd25519PIN(
-        useroptions.pin_token, useroptions.privateKey
+        useroptions.pin_token, useroptions.privateKey || useroptions.private_key
       );
       const transfer_json = {
         asset_id, amount, trace_id: trace_id || self.uuidv4(),
@@ -321,7 +321,7 @@ const ACCOUNT = function(opts) {
         method: 'POST',
         body,
         headers: {
-          'Authorization': 'Bearer ' + self.getToken(payload, useroptions.privateKey),
+          'Authorization': 'Bearer ' + self.getToken(payload, useroptions.privateKey || useroptions.private_key),
           'Content-Type': 'application/json',
         },
       }
