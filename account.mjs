@@ -1,5 +1,5 @@
+import { sharedKey } from 'curve25519-js';
 import crypto from 'crypto';
-import crypto_scalarmult from './ed25519.mjs'
 import forge from 'node-forge';
 import fs from 'fs';
 import int64Buffer from 'int64-buffer';
@@ -7,9 +7,9 @@ import jwt from 'jsonwebtoken';
 import request from './request.mjs';
 
 const { Uint64LE } = int64Buffer;
-const rsa = forge.pki.rsa;
-const ed25519 = forge.pki.ed25519;
 const algorithm = { algorithm: 'RS512' };
+const ed25519 = forge.pki.ed25519;
+const rsa = forge.pki.rsa;
 
 const ACCOUNT = function(opts) {
   let self = this;
@@ -60,15 +60,6 @@ const ACCOUNT = function(opts) {
       : jwt.sign(payload, privateKey, algorithm);
   };
 
-  self.scalarMult = (curvePriv, publicKey) => {
-    curvePriv[0] &= 248
-    curvePriv[31] &= 127
-    curvePriv[31] |= 64
-    var sharedKey = new Uint8Array(32);
-    crypto_scalarmult(sharedKey, curvePriv, publicKey);
-    return sharedKey;
-  }
-
   self.privateKeyToCurve25519 = (privateKey) => {
     const seed = privateKey.slice(0, 32)
     const sha512 = crypto.createHash('sha512')
@@ -82,9 +73,9 @@ const ACCOUNT = function(opts) {
 
   self.signEncryptEd25519PIN = (pinToken, privateKey) => {
     pinToken = Buffer.from(pinToken, 'base64')
-    return Buffer.from(self.scalarMult(
-      self.privateKeyToCurve25519(privateKey), pinToken.slice(0, 32)
-    )).toString('base64');
+    privateKey = Buffer.from(privateKey, 'base64')
+    privateKey = this.privateKeyToCurve25519(privateKey)
+    return sharedKey(privateKey, pinToken);
   }
 
   self.updatePin = (oldpin, newpin, aeskeybase64, useroptions) => {
@@ -236,9 +227,10 @@ const ACCOUNT = function(opts) {
       if (typeof amount === 'number') {
         amount = amount + '';
       }
-      let encrypted_pin = self.encryptCustomPIN(
-        useroptions.pin, useroptions.aesKey
+      const aesKey = useroptions.aesKey || self.signEncryptEd25519PIN(
+        useroptions.pin_token, useroptions.privateKey
       );
+      let encrypted_pin = self.encryptCustomPIN(useroptions.pin, aesKey);
       let transfer_json = {
         asset_id: asset_id,
         counter_user_id: recipient_id,
@@ -266,6 +258,68 @@ const ACCOUNT = function(opts) {
         url: `${self.api_domain}/transfers`,
         method: 'POST',
         body: transfer_json_str,
+        headers: {
+          'Authorization': 'Bearer ' + self.getToken(payload, useroptions.privateKey),
+          'Content-Type': 'application/json',
+        },
+      }
+      request(options, resolve, reject);
+    });
+  };
+
+  // https://developers.mixin.one/docs/api/transfer/raw-transfer
+  // {
+  //   "asset_id":     "the asset's asset_id which you are transferring",
+  //   "opponent_id":  "the mainnet address which you are transferring",
+  //   "amount":       "e.g.: "0.01", supports up to 8 digits after the decimal point",
+  //   "pin":          "Encrypted PIN",
+  //   "trace_id":     "Used to prevent duplicate payment, optional",
+  //   "memo":         "Maximally 140 characters, optional",
+  // }
+  // {
+  //   "asset_id": "the asset's asset_id which you are transferring",
+  //   "opponent_multisig": { // "the multi-signature object, identify the address which you are transferring",
+  //     "receivers": [
+  //       "user_id",
+  //       "user_id",
+  //       "...",
+  //     ],
+  //     "threshold": 3
+  //   },
+  //   "amount": "e.g.: "0.01", supports up to 8 digits after the decimal point",
+  //   "pin": "Encrypted PIN",
+  //   "trace_id": "Used to prevent duplicate payment, optional",
+  //   "memo": "Maximally 140 characters, optional",
+  // }
+  self.rawTransfer = (asset_id, opponent_id, opponent_multisig, amount, memo, useroptions, trace_id) => {
+    // console.log(useroptions);
+    return new Promise((resolve, reject) => {
+      const api = '/transactions';
+      if (!memo) { memo = ''; }
+      if (typeof amount === 'number') { amount = amount + ''; }
+      const aesKey = useroptions.aesKey || self.signEncryptEd25519PIN(
+        useroptions.pin_token, useroptions.privateKey
+      );
+      const transfer_json = {
+        asset_id, amount, trace_id: trace_id || self.uuidv4(),
+        pin: self.encryptCustomPIN(useroptions.pin, aesKey),
+      };
+      if (opponent_id) { transfer_json.opponent_id = opponent_id; }
+      else if (opponent_multisig) { transfer_json.opponent_multisig = opponent_multisig; }
+      if (memo != '') { transfer_json['memo'] = memo; }
+      const body = JSON.stringify(transfer_json);
+      const payload = {
+        uid: useroptions.client_id, // sender account id
+        sid: useroptions.session_id,
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + self.timeout,
+        jti: self.uuidv4(),
+        sig: crypto.createHash('sha256').update(`POST${api}${body}`).digest('hex'),
+      };
+      const options = {
+        url: `${self.api_domain}${api}`,
+        method: 'POST',
+        body,
         headers: {
           'Authorization': 'Bearer ' + self.getToken(payload, useroptions.privateKey),
           'Content-Type': 'application/json',
