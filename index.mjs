@@ -427,25 +427,28 @@ const MIXINNODE = function(opts) {
     });
   };
 
-  self.generateMultisigPayment = (data) => {
+  self.generateMultisigPayment = (data, useroptions) => {
     return new Promise((resolve, reject) => {
       data = data || {};
       data.trace_id = data.trace_id || self.uuidv4();
       const payload_json_str = JSON.stringify(data);
       const payload = {
-        uid: self.client_id,
-        sid: self.session_id,
+        uid: useroptions?.client_id || self.client_id,
+        sid: useroptions?.session_id || self.session_id,
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + self.timeout,
         jti: self.uuidv4(),
         sig: crypto.createHash('sha256').update('POST/payments' + payload_json_str).digest('hex'),
       };
+      const token = self.account.getToken(
+        payload, useroptions?.privatekey || useroptions?.private_key || self.privatekey
+      );
       const options = {
         url: `${self.api_domain}/payments`,
         method: 'POST',
         body: payload_json_str,
         headers: {
-          'Authorization': 'Bearer ' + self.account.getToken(payload, self.privatekey),
+          'Authorization': 'Bearer ' + token,
           'Content-Type': 'application/json'
         }
       }
