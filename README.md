@@ -1,7 +1,8 @@
 # mixin-node
 The nodejs SDK for mixin.one
 
-`This project is a pure ES6 module since version 2.`
+- `This project is a pure ES6 module since version 2.`
+- `This project requires Node.js v18 and above since version 2.5.`
 
 1. Following mixin developers documentation https://developers.mixin.one/guides create your mixin app.
 2. Click the button "Click to generate a new session". Now you will have the bot session secrets.
