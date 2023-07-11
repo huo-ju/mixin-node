@@ -1,7 +1,7 @@
 {
   "name": "mixin-node",
   "description": "The Node.js SDK for mixin.one",
-  "version": "2.5.1",
+  "version": "2.6.0",
   "main": "index.mjs",
   "type": "module",
   "engines": {
