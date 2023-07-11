@@ -21,15 +21,15 @@ const ACCOUNT = function(opts) {
   self.timeout = opts.timeout || 3600;
   self.api_domain = opts.api_domain || 'https://api.mixin.one';
   self.ws_domain = opts.ws_domain || 'wss://blaze.mixin.one/';
-  if (opts.client_secret)
-    self.client_secret = opts.client_secret;
-  if (opts.share_secret)
-    self.share_secret = opts.share_secret;
+  opts.client_secret && (self.client_secret = opts.client_secret);
+  opts.share_secret && (self.share_secret = opts.share_secret);
 
-  if (typeof opts.privatekey == "string") {
+  if (opts.private_key) {
+    self.privatekey = opts.private_key;
+  } else if (typeof opts.privatekey === 'string') {
     const cert = fs.readFileSync(opts.privatekey);
     self.privatekey = cert;
-  } else if (typeof opts.privatekey == "object") {
+  } else if (typeof opts.privatekey === 'object') {
     self.privatekey = opts.privatekey;
   }
 
@@ -58,6 +58,7 @@ const ACCOUNT = function(opts) {
     return _privateKey.length === 64
       ? self.getEd25519Sign(payload, _privateKey)
       : jwt.sign(payload, privateKey, algorithm);
+    // https://github.com/eclipse/microprofile-jwt-auth/issues/142
   };
 
   self.privateKeyToCurve25519 = (privateKey) => {
