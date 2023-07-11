@@ -7,7 +7,7 @@ import interval from 'interval-promise';
 import request from './request.mjs';
 import WebSocket from 'ws';
 import wsreconnect from './ws-reconnect.mjs';
-import zlib from "zlib";
+import zlib from 'zlib';
 
 const { Uint64LE } = int64Buffer;
 
@@ -19,22 +19,24 @@ const MIXINNODE = function(opts) {
   self.aeskey = opts.aeskey;
   self.client_id = opts.client_id;
   self.session_id = opts.session_id;
+  self.pin_token = opts.pin_token;
   self.timeout = opts.timeout || 3600;
   self.api_domain = opts.api_domain || 'https://api.mixin.one';
   self.ws_domain = opts.ws_domain || 'wss://blaze.mixin.one/';
-  if (opts.client_secret)
-    self.client_secret = opts.client_secret;
-  if (opts.share_secret)
-    self.share_secret = opts.share_secret;
-
-  if (typeof opts.privatekey == "string") {
+  opts.client_secret && (self.client_secret = opts.client_secret);
+  opts.share_secret && (self.share_secret = opts.share_secret);
+  if (opts.private_key) {
+    self.privatekey = opts.private_key;
+  } else if (typeof opts.privatekey === 'string') {
     const cert = fs.readFileSync(opts.privatekey);
     self.privatekey = cert;
-  } else if (typeof opts.privatekey == "object") {
+  } else if (typeof opts.privatekey === 'object') {
     self.privatekey = opts.privatekey;
   }
-  if (!self.pin || !self.aeskey || !self.client_id || !self.session_id || !self.privatekey) {
-    throw ("pin, aeskey, client_id, session_id, privatekey are require fields");
+  if (!self.pin || !self.client_id || !self.session_id || !self.privatekey || !(
+    self.aeskey || self.pin_token
+  )) { // aeskey: backward compatibility, pin_token: new Ed25519 session.
+    throw ('pin, client_id, session_id, pin_token, private_key are required');
   }
   self.account = new Account(opts);
 
@@ -90,13 +92,14 @@ const MIXINNODE = function(opts) {
       let transfer_sig_str = "POST/transfers" + transfer_json_str;
       let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest("hex");
 
-      let payload = {
+      const payload = {
         uid: self.client_id, //bot account id
         sid: self.session_id,
         iat: seconds,
         exp: seconds_exp,
         jti: self.uuidv4(),
-        sig: transfer_sig_sha256
+        sig: transfer_sig_sha256,
+        scp: 'FULL',
       };
 
       let options = {
@@ -126,13 +129,14 @@ const MIXINNODE = function(opts) {
       }
       let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest("hex");
 
-      let payload = {
+      const payload = {
         uid: self.client_id, //bot account id
         sid: self.session_id,
         iat: seconds,
         exp: seconds_exp,
         jti: self.uuidv4(),
-        sig: transfer_sig_sha256
+        sig: transfer_sig_sha256,
+        scp: 'FULL',
       };
 
       let options = {
@@ -157,13 +161,14 @@ const MIXINNODE = function(opts) {
         let encrypted_pin = self.encryptPIN();
         let transfer_sig_str = "GET/me";
         let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest("hex");
-        let payload = {
+        const payload = {
           uid: self.client_id, //bot account id
           sid: self.session_id,
           iat: seconds,
           exp: seconds_exp,
           jti: self.uuidv4(),
-          sig: transfer_sig_sha256
+          sig: transfer_sig_sha256,
+          scp: 'FULL',
         };
         token = self.account.getToken(payload, self.privatekey);
       } else {
@@ -299,13 +304,14 @@ const MIXINNODE = function(opts) {
     if (opts && opts.timeout)
       seconds_exp = Math.floor(Date.now() / 1000) + opts.timeout;
 
-    let payload = {
+    const payload = {
       uid: self.client_id, //bot account id
       sid: self.session_id,
       iat: seconds,
       exp: seconds_exp,
       jti: self.uuidv4(),
-      sig: transfer_sig_sha256
+      sig: transfer_sig_sha256,
+      scp: 'FULL',
     };
     //console.log(payload);
     return self.account.getToken(payload, self.privatekey);
@@ -396,13 +402,14 @@ const MIXINNODE = function(opts) {
           let message_json_str = JSON.stringify([params]);
           let message_sig_str = "POST/messages" + message_json_str;
           let message_sig_sha256 = crypto.createHash('sha256').update(message_sig_str).digest("hex");
-          let payload = {
+          const payload = {
             uid: self.client_id, //bot account id
             sid: self.session_id,
             iat: seconds,
             exp: seconds_exp,
             jti: self.uuidv4(),
-            sig: message_sig_sha256
+            sig: message_sig_sha256,
+            scp: 'FULL',
           };
           let options = {
             url: `${self.api_domain}/messages`,
@@ -439,9 +446,10 @@ const MIXINNODE = function(opts) {
         exp: Math.floor(Date.now() / 1000) + self.timeout,
         jti: self.uuidv4(),
         sig: crypto.createHash('sha256').update('POST/payments' + payload_json_str).digest('hex'),
+        scp: 'FULL',
       };
       const token = self.account.getToken(
-        payload, useroptions?.privatekey || useroptions?.private_key || self.privatekey
+        payload, useroptions?.private_key || useroptions?.privatekey || self.privatekey
       );
       const options = {
         url: `${self.api_domain}/payments`,

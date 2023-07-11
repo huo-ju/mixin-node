@@ -111,13 +111,14 @@ const ACCOUNT = function(opts) {
       if (useroptions.privatekey)
         privatekey = useroptions.privatekey;
 
-      let payload = {
+      const payload = {
         uid: client_id, //bot account id
         sid: session_id,
         iat: seconds,
         exp: seconds_exp,
         jti: self.uuidv4(),
-        sig: pin_sig_sha256
+        sig: pin_sig_sha256,
+        scp: 'FULL',
       };
       let options = {
         url: `${self.api_domain}/pin/update`,
@@ -153,13 +154,14 @@ const ACCOUNT = function(opts) {
       if (useroptions.privatekey)
         privatekey = useroptions.privatekey;
 
-      let payload = {
+      const payload = {
         uid: client_id, //bot account id
         sid: session_id,
         iat: seconds,
         exp: seconds_exp,
         jti: self.uuidv4(),
-        sig: profile_sig_sha256
+        sig: profile_sig_sha256,
+        scp: 'FULL',
       };
       let options = {
         url: `${self.api_domain}/me`,
@@ -196,13 +198,14 @@ const ACCOUNT = function(opts) {
         url = `${self.api_domain}/assets/` + asset_id;
       }
       let transfer_sig_sha256 = crypto.createHash('sha256').update(transfer_sig_str).digest('hex');
-      let payload = {
+      const payload = {
         uid: useroptions.client_id, // user account id
         sid: useroptions.session_id,
         iat: seconds,
         exp: seconds_exp,
         jti: self.uuidv4(),
         sig: transfer_sig_sha256,
+        scp: 'FULL',
       };
       let options = {
         url: url,
@@ -246,20 +249,21 @@ const ACCOUNT = function(opts) {
       let transfer_sig_sha256 = crypto.createHash('sha256').update(
         transfer_sig_str
       ).digest('hex');
-      let payload = {
+      const payload = {
         uid: useroptions.client_id, // sender account id
         sid: useroptions.session_id,
         iat: seconds,
         exp: seconds_exp,
         jti: self.uuidv4(),
         sig: transfer_sig_sha256,
+        scp: 'FULL',
       };
       let options = {
         url: `${self.api_domain}/transfers`,
         method: 'POST',
         body: transfer_json_str,
         headers: {
-          'Authorization': 'Bearer ' + self.getToken(payload, useroptions.privateKey || useroptions.private_key),
+          'Authorization': 'Bearer ' + self.getToken(payload, useroptions.private_key || useroptions.privateKey),
           'Content-Type': 'application/json',
         },
       }
@@ -315,13 +319,14 @@ const ACCOUNT = function(opts) {
         exp: Math.floor(Date.now() / 1000) + self.timeout,
         jti: self.uuidv4(),
         sig: crypto.createHash('sha256').update(`POST${api}${body}`).digest('hex'),
+        scp: 'FULL',
       };
       const options = {
         url: `${self.api_domain}${api}`,
         method: 'POST',
         body,
         headers: {
-          'Authorization': 'Bearer ' + self.getToken(payload, useroptions.privateKey || useroptions.private_key),
+          'Authorization': 'Bearer ' + self.getToken(payload, useroptions.private_key || useroptions.privateKey),
           'Content-Type': 'application/json',
         },
       }
@@ -402,7 +407,8 @@ const ACCOUNT = function(opts) {
           iat: seconds,
           exp: seconds_exp,
           jti: self.uuidv4(),
-          sig: createuser_sig_sha256
+          sig: createuser_sig_sha256,
+          scp: 'FULL',
         };
         let options = {
           url: `${self.api_domain}/users`,
