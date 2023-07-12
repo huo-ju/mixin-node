@@ -8,6 +8,8 @@ import request from './request.mjs';
 
 const { Uint64LE } = int64Buffer;
 const algorithm = { algorithm: 'RS512', allowInsecureKeySizes: true };
+// https://github.com/auth0/node-jsonwebtoken/wiki/Migration-Notes:-v8-to-v9
+// allowInsecureKeySizes: true
 const ed25519 = forge.pki.ed25519;
 const rsa = forge.pki.rsa;
 
